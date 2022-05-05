@@ -1,11 +1,13 @@
 # this is the bot.py
 import os
 import random
+import time
 from urllib import request
 import psutil
 import requests
 import uuid
 import shutil
+import asyncio
 from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
@@ -35,9 +37,11 @@ embed_error.set_author(name="[Error]", url="https://bjarne.dev/",
 
 def distort_image(fname):
     """function to distort an image using the magick library"""
-    image = Image.open(fname)
+    image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
-    distortcmd = f"magick {fname} -liquid-rescale 60x60%! -resize {imgdimens[0]}x{imgdimens[1]}\! results/{fname}"
+    distortcmd = f"magick " + \
+        os.path.join(
+            "raw", f"{fname}") + f" -liquid-rescale 60x60%! -resize {imgdimens[0]}x{imgdimens[1]}\! " + os.path.join("results", f"{fname}")
 
     os.system(distortcmd)
 
@@ -47,9 +51,9 @@ def distort_image(fname):
     image = Image.open(f"results/{fname}")
     filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
     image.save(buf, filetype)
-
+    image.close()
     buf.seek(0)
-    return buf
+    return discord.File(os.path.join("results", f"{fname}"))
 
 
 @bot.event
@@ -84,7 +88,7 @@ async def on_message(message):
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
     help_embed = discord.Embed(
-        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n\n**Commands:**\n`help`:  Shows this help message\n", color=rand_color)
+        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\n", color=rand_color)
     help_embed.set_author(name="Hi, I'm an Open Source image distortion discord bot!", url="https://bjarne.dev/",
                           icon_url="https://cdn.discordapp.com/avatars/971742838024978463/0aa0248616aa2b215640db6b62ad5961.webp?size=80")
     await ctx.send(embed=help_embed)
@@ -92,6 +96,15 @@ async def help(ctx):
 
 @bot.command(name='deform', help='deform an image', aliases=['d', 'distort'])
 async def deform(ctx):
+    #first delete the existing files
+    for delf in os.listdir("raw"):
+        if delf.endswith(".jpg"):
+            os.remove(os.path.join("raw", delf))
+
+    for delf2 in os.listdir("results"):
+        if delf2.endswith(".jpg"):
+            os.remove(os.path.join("results", delf2))
+
     try:
         url = ctx.message.attachments[0].url
     except IndexError:
@@ -101,12 +114,21 @@ async def deform(ctx):
         if url[0:26] == "https://cdn.discordapp.com":
             r = requests.get(url, stream=True)
             # TODO security check, if file is actually an image!
-            image_name = str(uuid.uuid4()) + '.jpg'
+            image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
 
-            with open(image_name, 'wb') as out_file:
+            with open(os.path.join("raw", image_name), 'wb') as out_file:
                 if DEBUG:
-                    print("saving image: "+image_name)
+                    print("saving image: " + image_name)
                 shutil.copyfileobj(r.raw, out_file)
-    await ctx.send("done")
+
+                # unfortunately await can't be used here
+                distorted_file = distort_image(image_name)
+
+                if DEBUG:
+                    print("distorted image: " + image_name)
+                # send distorted image
+                await ctx.send("[Debug] Processed image: " + image_name, file=distorted_file)
+
+                return
 
 bot.run(TOKEN)
