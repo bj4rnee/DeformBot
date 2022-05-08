@@ -112,10 +112,15 @@ async def deform(ctx):
         if delf2.endswith(".jpg"):
             os.remove(os.path.join("results", delf2))
 
-    msg = ctx.message
+    msg = ctx.message #msg with command in it
+    reply_msg = None #original msg which was replied to with command 
+
+    if msg.reference != None: # TODO find out which cond should be used
+        reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
+        msg = reply_msg
     
     try:
-        url = ctx.message.attachments[0].url
+        url = msg.attachments[0].url
     except IndexError:
         await ctx.send(embed=embed_nofile_error)
         return
