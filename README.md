@@ -7,7 +7,7 @@ An Open Source Image distortion discord bot based on the old version of [@Distor
 # Usage
 DeformBot's command prefix is `§`.\
 You can display the help message with `§help`.\
-Reacting to an image with the `🤖`-emoji will trigger DeformBot to process it.\ 
+Reacting to an image with the `🤖`-emoji will trigger DeformBot to process it.\
 Additionally `§deform` alias `§d` causes the bot to use the attached image of the message containing the command (or the image replied to with a command).
 
 # Command arguments
