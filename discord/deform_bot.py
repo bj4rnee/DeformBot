@@ -23,6 +23,7 @@ DEBUG = True
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 COMMAND_PREFIX = '§'
+lock = asyncio.Lock()  # Doesn't require event loop
 
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
@@ -30,6 +31,7 @@ start_time = datetime.now()
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
                    description="an Open Source image distortion discord bot")
 client = discord.Client()
+bot.mutex = True # mutex lock
 
 embed_nofile_error = discord.Embed(description="No attachments", color=0xFF5555)
 embed_nofile_error.set_author(name="[Error]", url="https://bjarne.dev/",
@@ -38,6 +40,19 @@ embed_nofile_error.set_author(name="[Error]", url="https://bjarne.dev/",
 embed_wrongfile_error = discord.Embed(description="Can't process this filetype. Only `.jpg`, `.jpeg` and `.png` are supported at the moment", color=0xFF5555)
 embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/", icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
+
+#Semaphore methods
+async def wait(): #aquire the lock
+    while bot.mutex == False:
+        await asyncio.sleep(1)
+        print('.', end='')
+        pass
+    bot.mutex = False
+    return bot.mutex
+
+async def signal(): #free the lock
+    bot.mutex = True
+    return bot.mutex
 
 def fetch_image(message):
     return
@@ -97,81 +112,44 @@ async def help(ctx):
     help_embed = discord.Embed(
         description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it.", color=rand_color)
     help_embed.set_author(name="Hi, I'm an Open Source image distortion discord bot!", url="https://bjarne.dev/",
-                          icon_url="https://cdn.discordapp.com/avatars/971742838024978463/0aa0248616aa2b215640db6b62ad5961.webp?size=80")
+                          icon_url="https://cdn.discordapp.com/avatars/971742838024978463/4e6548403fb46347b84de17fe31a45b9.webp")
     await ctx.send(embed=help_embed)
 
 
-@bot.command(name='deform', help='deform an image', aliases=['d', 'distort'])
+@bot.command(name='deform', help='deform an image', aliases=['d', 'D' 'distort'])
 async def deform(ctx):
-    #first delete the existing files
-    for delf in os.listdir("raw"):
-        if delf.endswith(".jpg"):
-            os.remove(os.path.join("raw", delf))
+    async with lock:
+        #first delete the existing files
+        for delf in os.listdir("raw"):
+            if delf.endswith(".jpg"):
+                os.remove(os.path.join("raw", delf))
 
-    for delf2 in os.listdir("results"):
-        if delf2.endswith(".jpg"):
-            os.remove(os.path.join("results", delf2))
+        for delf2 in os.listdir("results"):
+            if delf2.endswith(".jpg"):
+                os.remove(os.path.join("results", delf2))
 
-    msg = ctx.message #msg with command in it
-    reply_msg = None #original msg which was replied to with command 
-
-    if msg.reference != None: # TODO find out which cond should be used
-        reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
-        msg = reply_msg
+        msg = ctx.message #msg with command in it
+        reply_msg = None #original msg which was replied to with command
+        # if DEBUG: 
+        #     print("\n!!!" + str(msg.reference))
+        if msg.reference != None: # TODO find out which cond should be used
+            reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
+            msg = reply_msg
     
-    try:
-        url = msg.attachments[0].url
-    except IndexError:
-        await ctx.send(embed=embed_nofile_error)
-        return
-    else:
-        if url[0:26] == "https://cdn.discordapp.com":
-            if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold():
-                r = requests.get(url, stream=True)
-                image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
+        try:
+            url = msg.attachments[0].url
+        except IndexError:
+            await ctx.send(embed=embed_nofile_error)
+            return
+        else:
+            if url[0:26] == "https://cdn.discordapp.com":
+                if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold():
+                    r = requests.get(url, stream=True)
+                    image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
 
-                with open(os.path.join("raw", image_name), 'wb') as out_file:
-                    if DEBUG:
-                        print("saving image: " + image_name)
-                    shutil.copyfileobj(r.raw, out_file)
-
-                    # unfortunately await can't be used here
-                    distorted_file = distort_image(image_name)
-
-                    if DEBUG:
-                        print("distorted image: " + image_name)
-                    # send distorted image
-                    if DEBUG:
-                        await ctx.send("[Debug] Processed image: " + image_name, file=distorted_file)
-                        return
-                    await ctx.send(file=distorted_file)
-                    return
-            else:
-                await ctx.send(embed=embed_wrongfile_error)
-                return
-
-@bot.event
-async def on_reaction_add(reaction, user): # if reaction is on a cached message
-    if user != bot.user:
-        if str(reaction.emoji) == "🤖":
-            #fetch and process the image
-            msg = reaction.message
-            ch = msg.channel
-            try:
-                url = msg.attachments[0].url
-            except IndexError:
-                if DEBUG: # don't send errors on reaction
-                    await ch.send(embed=embed_nofile_error)
-                return
-            else:
-                if url[0:26] == "https://cdn.discordapp.com":
-                    if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold():
-                        r = requests.get(url, stream=True)
-                        image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
-
-                        with open(os.path.join("raw", image_name), 'wb') as out_file:
-                            if DEBUG:
-                                print("saving image: " + image_name)
+                    with open(os.path.join("raw", image_name), 'wb') as out_file:
+                        if DEBUG:
+                            print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
 
                         # unfortunately await can't be used here
@@ -181,14 +159,55 @@ async def on_reaction_add(reaction, user): # if reaction is on a cached message
                             print("distorted image: " + image_name)
                         # send distorted image
                         if DEBUG:
-                            await ch.send("[Debug] Processed image: " + image_name, file=distorted_file)
+                            await ctx.send("[Debug] Processed image: " + image_name, file=distorted_file)
                             return
-                        await ch.send(file=distorted_file)
+                        await ctx.send(file=distorted_file)
                         return
-                    else:
-                        if DEBUG:
-                            await ch.send(embed=embed_wrongfile_error)
-                        return
+                else:
+                    await ctx.send(embed=embed_wrongfile_error)
+                    return
+
+
+@bot.event
+async def on_reaction_add(reaction, user): # if reaction is on a cached message
+    if user != bot.user:
+        if str(reaction.emoji) == "🤖":
+            async with lock:
+                #fetch and process the image
+                msg = reaction.message
+                ch = msg.channel
+                try:
+                    url = msg.attachments[0].url
+                except IndexError:
+                    if DEBUG: # don't send errors on reaction
+                        await ch.send(embed=embed_nofile_error)
+                    return
+                else:
+                    if url[0:26] == "https://cdn.discordapp.com":
+                        if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold():
+                            r = requests.get(url, stream=True)
+                            image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
+
+                            with open(os.path.join("raw", image_name), 'wb') as out_file:
+                                if DEBUG:
+                                    print("saving image: " + image_name)
+                                shutil.copyfileobj(r.raw, out_file)
+
+                                # unfortunately await can't be used here
+                                distorted_file = distort_image(image_name)
+
+                                if DEBUG:
+                                    print("distorted image: " + image_name)
+                                # send distorted image
+                                if DEBUG:
+                                    await ch.send("[Debug] Processed image: " + image_name, file=distorted_file)
+                                    return
+                                await ch.send(file=distorted_file)
+                                return
+                        else:
+                            if DEBUG:
+                                await ch.send(embed=embed_wrongfile_error)
+                            return
         else:
             return
 
