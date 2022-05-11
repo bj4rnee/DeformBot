@@ -18,7 +18,7 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 
-VERSION = "1.2.2_dev"
+VERSION = "1.2.3_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -70,8 +70,8 @@ def fetch_image(message):
     return
 
 
-# args: sean_carving, noise, blur, contrast, swirl, invert, disable compression, grayscale
-#       l=60,         n=0,   b=0,  c=0,      s=0,   i=False,u=False,             g=False
+# args: sean_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
+#       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
@@ -81,7 +81,7 @@ def distort_image(fname, args):
     #build the command string
     build_str = " "
     l=60
-
+    # TODO better compression
     if ("u" not in args): # disable-compression flag
         build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 85% "
     if not any("l" in value for value in args): # if l-flag is not in args
@@ -121,6 +121,9 @@ def distort_image(fname, args):
             build_str += f" -negate "
             continue
         if e.startswith('u'):
+            continue
+        if e.startswith('g'): #greyscale-flag
+            build_str += f" -grayscale average "
             continue
         if DEBUG:
             print("[ERROR]: invalid argument '"+ e +"'")
@@ -215,9 +218,8 @@ async def deform(ctx, *args):
 
         msg = ctx.message  # msg with command in it
         reply_msg = None  # original msg which was replied to with command
-        # if DEBUG:
-        #     print("\n!!!" + str(msg.reference))
-        if msg.reference != None:  # TODO find out which cond should be used
+
+        if msg.reference != None: # if msg is a reply
             reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
             msg = reply_msg
 
