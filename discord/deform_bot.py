@@ -240,9 +240,10 @@ async def deform(ctx, *args):
                             print("───────────" + image_name + "───────────")
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
+                        out_file.flush()
 
                         #wait short amount till file has been written
-                        await asyncio.sleep(0.2) #TODO if this fixes the issue, insert in on_reaction
+                        await asyncio.sleep(0.4) #TODO if this fixes the issue, insert in on_reaction
 
                         # distort the file
                         distorted_file = distort_image(image_name, args)
