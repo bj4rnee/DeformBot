@@ -240,10 +240,8 @@ async def deform(ctx, *args):
                             print("───────────" + image_name + "───────────")
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
+                        #flush the buffer, this fixes ReadException
                         out_file.flush()
-
-                        #wait short amount till file has been written
-                        await asyncio.sleep(0.4) #TODO if this fixes the issue, insert in on_reaction
 
                         # distort the file
                         distorted_file = distort_image(image_name, args)
@@ -297,6 +295,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                                     print("───────────" + image_name + "───────────")
                                     print("saving image: " + image_name)
                                 shutil.copyfileobj(r.raw, out_file)
+                                out_file.flush()
 
                                 # unfortunately await can't be used here
                                 distorted_file = distort_image(image_name, ())
