@@ -8,6 +8,7 @@ import requests
 import uuid
 import shutil
 import asyncio
+import traceback
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import discord
@@ -17,7 +18,7 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 
-VERSION = "1.2"
+VERSION = "1.2.1_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -92,15 +93,18 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     # backup file to /
     bkp_path = os.path.join("/home", "db_outputs")
     if os.path.exists(bkp_path):
-        print(psutil.disk_usage(bkp_path).free)
+        print("[DEBUG]: free backup space: " + psutil.disk_usage(bkp_path).free+"B")
         try:
+            buf = BytesIO()
+            buf.name = 'image.jpeg'
             image = Image.open(os.path.join(bkp_path, f"{fname}"))
             filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
             image.save(buf, filetype)
             image.close()
             if DEBUG:
                 print(f"stored image: {fname}")
-        except OSError:
+        except:
+            traceback.print_exc()
             print("IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     return discord.File(os.path.join("results", f"{fname}"))
@@ -108,6 +112,8 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
 
 @bot.event
 async def on_ready():
+    if DEBUG:
+        print("starting DeformBot " + VERSION + " ...")
     print(f'{bot.user} has connected to Discord!')
     # bot.remove_command('help')
 
