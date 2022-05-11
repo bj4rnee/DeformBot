@@ -84,7 +84,7 @@ def distort_image(fname, args):
     l=60
     # TODO better compression
     if ("u" not in args): # disable-compression flag
-        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 85% "
+        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 85% " # -colorspace RGB
     if not any("l" in value for value in args): # if l-flag is not in args
         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
