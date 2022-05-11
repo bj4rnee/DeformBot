@@ -95,7 +95,7 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     if os.path.exists(bkp_path):
         print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free)+"B")
         try:
-            shutil.copyfile(f"results/{fname}", bkp_path)
+            shutil.copy(f"results/{fname}", bkp_path)
             if DEBUG:
                 print(f"stored image: {fname}")
         except:
