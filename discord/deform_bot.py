@@ -117,7 +117,9 @@ def distort_image(fname, args):
                 build_str += f" "
             continue
         if e.startswith('i'): #invert-flag
-            build_str += f" -invert "
+            build_str += f" -negate "
+            continue
+        if e.startswith('u'):
             continue
         if DEBUG:
             print("[ERROR]: invalid argument '"+ e +"'")
