@@ -70,14 +70,24 @@ def fetch_image(message):
     return
 
 
-# args: sean_carving, noise, blur, contrast, swirl
-def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
+# args: sean_carving, noise, blur, contrast, swirl, invert, disable compression
+#       l=60,         n=0,   b=0,  c=0,      s=0,   i=False,d=False,
+def distort_image(fname, args):
     """function to distort an image using the magick library"""
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
+    
+    #build the command string
+    str = ""
+    if ("d" not in args):
+        str += 
+    for a in args:
+        if a.
+
+    # added compression in command
     distortcmd = f"magick " + \
         os.path.join(
-            "raw", f"{fname}") + f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! " + os.path.join("results", f"{fname}")
+            "raw", f"{fname}") + "" + f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! " + os.path.join("results", f"{fname}")
 
     os.system(distortcmd)
 
@@ -93,13 +103,16 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     # backup file to /
     bkp_path = os.path.join("/home", "db_outputs")
     if os.path.exists(bkp_path):
-        print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free)+"B")
-        try:
-            shutil.copy(f"results/{fname}", bkp_path)
-            if DEBUG:
-                print(f"stored image: {fname}")
-        except:
-            traceback.print_exc()
+        if DEBUG:
+            print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free)+"B")
+        if psutil.disk_usage(bkp_path).free >= 	536870912:
+            try:
+                shutil.copy(f"results/{fname}", bkp_path)
+                if DEBUG:
+                    print(f"stored image: {fname}")
+            except:
+                traceback.print_exc()
+        else:
             print("IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     return discord.File(os.path.join("results", f"{fname}"))
@@ -179,21 +192,19 @@ async def deform(ctx, *args):
 
                     with open(os.path.join("raw", image_name), 'wb') as out_file:
                         if DEBUG:
+                            print("───────────" + image_name + "───────────")
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
 
                         # parse args
                         parser = ArgumentParser()
 
-                        # unfortunately await can't be used here
-                        if len(args) <= 0:
-                            distorted_file = distort_image(image_name)
-                        else:
-                            distorted_file = distort_image(
-                                image_name, l=(100-int(args[0])))
+                        # distort the file
+                        distorted_file = distort_image(image_name, args)
 
                         if DEBUG:
                             print("distorted image: " + image_name)
+                            print("──────────────────────────────────────────────────────────────")
                         # send distorted image
                         if DEBUG:
                             await ctx.send("[Debug] Processed image: " + image_name + "\nargs=" + str(args), file=distorted_file)
@@ -237,14 +248,16 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 
                             with open(os.path.join("raw", image_name), 'wb') as out_file:
                                 if DEBUG:
+                                    print("───────────" + image_name + "───────────")
                                     print("saving image: " + image_name)
                                 shutil.copyfileobj(r.raw, out_file)
 
                                 # unfortunately await can't be used here
-                                distorted_file = distort_image(image_name)
+                                distorted_file = distort_image(image_name, ())
 
                                 if DEBUG:
                                     print("distorted image: " + image_name)
+                                    print("──────────────────────────────────────────────────────────────")
                                 # send distorted image
                                 if DEBUG:
                                     await ch.send("[Debug] Processed image: " + image_name, file=distorted_file)
