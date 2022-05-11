@@ -93,7 +93,7 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     # backup file to /
     bkp_path = os.path.join("/home", "db_outputs")
     if os.path.exists(bkp_path):
-        print("[DEBUG]: free backup space: " + psutil.disk_usage(bkp_path).free+"B")
+        print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free)+"B")
         try:
             buf = BytesIO()
             buf.name = 'image.jpeg'
