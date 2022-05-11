@@ -8,6 +8,7 @@ import requests
 import uuid
 import shutil
 import asyncio
+from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
@@ -58,6 +59,7 @@ async def wait():  # aquire the lock
     bot.mutex = False
     return bot.mutex
 
+
 async def signal():  # free the lock
     bot.mutex = True
     return bot.mutex
@@ -81,10 +83,24 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     buf = BytesIO()
     buf.name = 'image.jpeg'
 
+    # save file to /results/
     image = Image.open(f"results/{fname}")
     filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
     image.save(buf, filetype)
     image.close()
+
+    # backup file to /
+    if os.path.exists(os.path.join("home", "db_outputs")):
+        print(psutil.disk_usage(os.path.join("home", "db_outputs")).free)
+        try:
+            image = Image.open(os.path.join("home", "db_outputs", f"{fname}"))
+            filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
+            image.save(buf, filetype)
+            image.close()
+            if DEBUG:
+                print(f"stored image: {fname}")
+        except OSError:
+            print("IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     return discord.File(os.path.join("results", f"{fname}"))
 
@@ -164,6 +180,9 @@ async def deform(ctx, *args):
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
 
+                        # parse args
+                        parser = ArgumentParser()
+
                         # unfortunately await can't be used here
                         if len(args) <= 0:
                             distorted_file = distort_image(image_name)
@@ -189,6 +208,15 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
     if user != bot.user:
         if str(reaction.emoji) == "🤖":
             async with lock:
+                # first delete the existing files
+                for delf in os.listdir("raw"):
+                    if delf.endswith(".jpg"):
+                        os.remove(os.path.join("raw", delf))
+
+                for delf2 in os.listdir("results"):
+                    if delf2.endswith(".jpg"):
+                        os.remove(os.path.join("results", delf2))
+
                 # fetch and process the image
                 msg = reaction.message
                 ch = msg.channel

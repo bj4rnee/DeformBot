@@ -1,5 +1,5 @@
-"discord.py"
-"python-dotenv"
-"pillow"
-"psutil"
-"requests"
+discord.py
+python-dotenv
+pillow
+psutil
+requests
