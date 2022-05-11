@@ -70,8 +70,8 @@ def fetch_image(message):
     return
 
 
-# args: sean_carving, noise, blur, contrast, swirl, invert, disable compression
-#       l=60,         n=0,   b=0,  c=0,      s=0,   i=False,u=False,
+# args: sean_carving, noise, blur, contrast, swirl, invert, disable compression, grayscale
+#       l=60,         n=0,   b=0,  c=0,      s=0,   i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
@@ -99,22 +99,23 @@ def distort_image(fname, args):
         if e.startswith('n'): #noise-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
-                build_str += f" "
+                cast_float = float(cast_int)/100
+                build_str += f" +noise Gaussian -attenuate {cast_float} "
             continue
         if e.startswith('b'): #blur-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
-                build_str += f" "
+                build_str += f" -blur 0x{cast_int} "
             continue
         if e.startswith('c'): #contrast-flag
-            cast_int = int(e[1:3])
-            if cast_int >= 1 and cast_int <= 100:
-                build_str += f" "
+            cast_int = int(e[1:])
+            if cast_int >= -100 and cast_int <= 100:
+                build_str += f" -brightness-contrast 0x{cast_int} "
             continue
         if e.startswith('s'): #swirl-flag
-            cast_int = int(e[1:3])
-            if cast_int >= 1 and cast_int <= 100:
-                build_str += f" "
+            cast_int = int(e[1:])
+            if cast_int >= -360 and cast_int <= 360:
+                build_str += f" -swirl {cast_int} "
             continue
         if e.startswith('i'): #invert-flag
             build_str += f" -negate "
