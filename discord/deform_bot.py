@@ -90,7 +90,7 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     image.close()
 
     # backup file to /
-    if os.path.exists(os.path.join("home", "db_outputs")):
+    if os.path.exists(os.path.join("/home", "db_outputs")):
         print(psutil.disk_usage(os.path.join("home", "db_outputs")).free)
         try:
             image = Image.open(os.path.join("home", "db_outputs", f"{fname}"))
