@@ -90,10 +90,11 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     image.close()
 
     # backup file to /
-    if os.path.exists(os.path.join("/home", "db_outputs")):
-        print(psutil.disk_usage(os.path.join("home", "db_outputs")).free)
+    bkp_path = os.path.join("/home", "db_outputs")
+    if os.path.exists(bkp_path):
+        print(psutil.disk_usage(bkp_path).free)
         try:
-            image = Image.open(os.path.join("home", "db_outputs", f"{fname}"))
+            image = Image.open(os.path.join(bkp_path, f"{fname}"))
             filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
             image.save(buf, filetype)
             image.close()
