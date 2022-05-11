@@ -95,12 +95,7 @@ def distort_image(fname, l=60, n=0, b=0, c=0, s=0):
     if os.path.exists(bkp_path):
         print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free)+"B")
         try:
-            buf = BytesIO()
-            buf.name = 'image.jpeg'
-            image = Image.open(os.path.join(bkp_path, f"{fname}"))
-            filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
-            image.save(buf, filetype)
-            image.close()
+            shutil.copyfile(f"results/{fname}", bkp_path)
             if DEBUG:
                 print(f"stored image: {fname}")
         except:
