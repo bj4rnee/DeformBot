@@ -79,45 +79,45 @@ def distort_image(fname, args):
     imgdimens = image.width, image.height
     
     #build the command string
-    str = " "
+    build_str = " "
     l=60
 
     if ("u" not in args): # disable-compression flag
-        str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 85% "
+        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 85% "
     if not any("l" in value for value in args): # if l-flag is not in args
-        str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
+        build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
     for e in args:
         if e.startswith('l'): #iterations flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
                 l = cast_int
-                str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
+                build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
             else: # no sean-carivng
                 l = 0
             continue
         if e.startswith('n'): #noise-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
-                str += f" "
+                build_str += f" "
             continue
         if e.startswith('b'): #blur-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
-                str += f" "
+                build_str += f" "
             continue
         if e.startswith('c'): #contrast-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
-                str += f" "
+                build_str += f" "
             continue
         if e.startswith('s'): #swirl-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
-                str += f" "
+                build_str += f" "
             continue
         if e.startswith('i'): #invert-flag
-            str += f" -invert "
+            build_str += f" -invert "
             continue
         if DEBUG:
             print("[ERROR]: invalid argument '"+ e +"'")
@@ -126,7 +126,7 @@ def distort_image(fname, args):
     # added compression in command
     distortcmd = f"magick " + \
         os.path.join(
-            "raw", f"{fname}") + str + os.path.join("results", f"{fname}")
+            "raw", f"{fname}") + build_str + os.path.join("results", f"{fname}")
 
     os.system(distortcmd)
 
@@ -143,7 +143,7 @@ def distort_image(fname, args):
     bkp_path = os.path.join("/home", "db_outputs")
     if os.path.exists(bkp_path):
         if DEBUG:
-            print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free)+"B")
+            print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free) + "B")
         if psutil.disk_usage(bkp_path).free >= 	536870912:
             try:
                 shutil.copy(f"results/{fname}", bkp_path)
