@@ -73,6 +73,7 @@ def fetch_image(message):
 # args: sean_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
+# TODO add args, better noise!
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     image = Image.open(os.path.join("raw", fname))
@@ -240,8 +241,8 @@ async def deform(ctx, *args):
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
 
-                        # parse args
-                        parser = ArgumentParser()
+                        #wait short amount till file has been written
+                        await asyncio.sleep(0.2) #TODO if this fixes the issue, insert in on_reaction
 
                         # distort the file
                         distorted_file = distort_image(image_name, args)
