@@ -30,6 +30,7 @@ lock = asyncio.Lock()  # Doesn't require event loop
 
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
+arg_error_flag = False
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
                    description="an Open Source image distortion discord bot")
@@ -75,8 +76,10 @@ def fetch_image(message):
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      p=0                    i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
 # TODO add args, better noise! -charcoal
-def distort_image(fname, args, ch):
+def distort_image(fname, args):
     """function to distort an image using the magick library"""
+    global arg_error_flag
+    global argument_error
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
     
@@ -128,8 +131,16 @@ def distort_image(fname, args, ch):
         if e.startswith('p'): #perspective-distort-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
-                cast_float = "{:.2f}".format(interp(cast_int,[1,100],[0.1,10.0])) #map float to meaningful power range
-                build_str += f" -define shepards:power={cast_float} -distort Shepards '30,11 20,11  48,29 58,29' "
+                cast_float = "{:.1f}".format(interp(cast_int,[1,100],[0.1,12.0])) #map float to meaningful power range
+                points = []
+                x_th = 0.15*imgdimens[0]
+                y_th = 0.15*imgdimens[1]
+                for i in range(3): #generate 3 random points
+                    points.append(tuple([random.randint(x_th, imgdimens[0]-x_th),random.randint(y_th, imgdimens[1]-y_th)]))
+                    #for every point, generate another random point in a short range
+                    points.append(tuple([random.randint(),]))
+                #                                                        anker points: (1,1)                  (x,1)                               (1,y)                                                (x,y)
+                build_str += f" -define shepards:power={cast_float} -distort Shepards '1,1,1,1 {imgdimens[0]-1},1,{imgdimens[0]-1},1 1,{imgdimens[1]-1},1,{imgdimens[1]-1} {imgdimens[0]-1},{imgdimens[1]-1},{imgdimens[0]-1},{imgdimens[1]-1} ' "
             continue
         if e.startswith('i'): #invert-flag
             build_str += f" -negate "
@@ -140,7 +151,7 @@ def distort_image(fname, args, ch):
             build_str += f" -grayscale average "
             continue
         argument_error.description = "Invalid argument: " + e +".\nFor argument usage refer to `§help`"
-        ch.send(embed=argument_error)
+        arg_error_flag = True
         if DEBUG:
             print("[ERROR]: invalid argument '"+ e +"'")
 
@@ -182,8 +193,10 @@ def distort_image(fname, args, ch):
 @bot.event
 async def on_ready():
     if DEBUG:
+        print("──────────────────────────────────────────────────────────────")
         print("starting DeformBot " + VERSION + " ...")
-    print(f'{bot.user} has connected to Discord!')
+        print(f'{bot.user} has connected to Discord!')
+        print("──────────────────────────────────────────────────────────────")
     # bot.remove_command('help')
 
 
@@ -228,7 +241,10 @@ async def help(ctx):
 
 @bot.command(name='deform', help='deform an image', aliases=['d', 'D' 'distort'])
 async def deform(ctx, *args):
+    global arg_error_flag
     async with lock:
+        #set error flag to false
+        arg_error_flag = False
         # first delete the existing files
         for delf in os.listdir("raw"):
             if delf.endswith(".jpg"):
@@ -266,7 +282,10 @@ async def deform(ctx, *args):
                         out_file.flush()
 
                         # distort the file
-                        distorted_file = distort_image(image_name, args, ch)
+                        distorted_file = distort_image(image_name, args)
+
+                        if arg_error_flag:
+                            await ctx.send(embed=argument_error)
 
                         if DEBUG:
                             print("distorted image: " + image_name)
@@ -320,7 +339,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                                 out_file.flush()
 
                                 # unfortunately await can't be used here
-                                distorted_file = distort_image(image_name, (), ch)
+                                distorted_file = distort_image(image_name, ())
 
                                 if DEBUG:
                                     print("distorted image: " + image_name)
