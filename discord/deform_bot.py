@@ -82,7 +82,7 @@ def distort_image(fname, args):
     #build the command string
     build_str = " "
     l=60
-    # TODO better compression
+
     if ("u" not in args): # disable-compression flag
         build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 85% " # -colorspace RGB
     if not any("l" in value for value in args): # if l-flag is not in args
@@ -198,8 +198,10 @@ async def on_message(message):
 @bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
+    helpstr_args = "\n\n**Arguments:**\n`l`:  Sean-Carving factor\n`s`:  swirl (degrees)\n`s`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  distortion effect\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression"
+    helpstr_usage = "\n\n**Usage:**\n`§deform [options]`\nExample:  _§deform s35 n95 l45 c+40 b1_"
     help_embed = discord.Embed(
-        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it.", color=rand_color)
+        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
     help_embed.set_author(name="Hi, I'm an Open Source image distortion discord bot!", url="https://bjarne.dev/",
                           icon_url="https://cdn.discordapp.com/avatars/971742838024978463/4e6548403fb46347b84de17fe31a45b9.webp")
     await ctx.send(embed=help_embed)
