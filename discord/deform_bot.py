@@ -101,7 +101,7 @@ def distort_image(fname, args):
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
-                build_str += f" +noise Multiplicative -attenuate {cast_float} "
+                build_str += f" +noise Gaussian -attenuate {cast_float} "
             continue
         if e.startswith('b'): #blur-flag
             cast_int = int(e[1:4])
@@ -121,7 +121,8 @@ def distort_image(fname, args):
         if e.startswith('o'): #implode-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
-                build_str += f" -implode {cast_int} "
+                cast_float = float(cast_int)/100
+                build_str += f" -implode {cast_float} "
             continue
         if e.startswith('i'): #invert-flag
             build_str += f" -negate "
