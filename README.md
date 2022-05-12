@@ -32,25 +32,26 @@ Reacting to an image with the `🤖`-emoji will trigger DeformBot to process it.
 Additionally `§deform` alias `§d` causes the bot to use the attached image of the message containing the command (or the image replied to with a command).
 
 # Command arguments
-Arguments for the `$deform` command can be used as followed:\
+Arguments for the `§d` command can be used as followed:\
 `§deform [option0][value] [option1][value] ...`
-| option | description         | value type | value range  |
-|--------|---------------------|:----------:|--------------|
-| l      | sean carving factor | int        | [0; 100]     |
-| s      | swirl               | int        | [-360; +360] |
-| n      | noise               | int        | [0; 100]     |
-| b      | blur                | int        | [0; 100]     |
-| c      | contrast            | int        | [-100; 100]  |
-| o      | implode             | int        | [0; 100]     |
-| d      | distortion effect   | int        | [0; 100]     |
-| i      | invert colors       | bool       |              |
-| g      | grayscale colors    | bool       |              |
-| u      | disable compression | bool       |              |
+| option | description                 | value type | value range  |
+|:------:|-----------------------------|:----------:|--------------|
+| l      | sean carving factor         | int        | [0; 100]     |
+| s      | swirl                       | int        | [-360; +360] |
+| n      | noise                       | int        | [0; 100]     |
+| b      | blur                        | int        | [0; 100]     |
+| c      | contrast                    | int        | [-100; 100]  |
+| o      | implode                     | int        | [0; 100]     |
+| p      | perspective distortion (IWD)| int        | [0; 100]     |
+| i      | invert colors               | bool       |              |
+| g      | grayscale colors            | bool       |              |
+| u      | disable compression         | bool       |              |
 
 All arguments can be arbitrarily combined or left out.
 Only integer values are accepted, I advise to play around with those values to find something that looks good.\
 \
 Examples:\
+_§deform_\
 _§deform s35 n95 l45 c+40 b1_\
 _§deform l50 s25 c+30 n70 g_\
 _§deform l0 u_ (this outputs the original image)
@@ -59,7 +60,7 @@ _§deform l0 u_ (this outputs the original image)
 [@Deformbot](https://twitter.com) on Twitter will distort an image, if you tag him in the comments.
 
 # Privacy policy
-[Here](https://github.com/bj4rnee/DeformBot/blob/main/misc/PRIVACY.md) you can check DeformBot's privacy policy out.
+[Here](https://github.com/bj4rnee/DeformBot/blob/main/misc/PRIVACY.md) you can check out DeformBot's privacy policy.
 
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea

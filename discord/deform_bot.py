@@ -9,6 +9,7 @@ import uuid
 import shutil
 import asyncio
 import traceback
+from numpy import interp
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import discord
@@ -18,7 +19,7 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 
-VERSION = "1.2.4_dev"
+VERSION = "1.2.5_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -46,7 +47,7 @@ embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
                                  icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
 argument_error = discord.Embed(
-    description="Can't parse arguments", color=0xFF5555)
+    description="Invalid argument: " + ".\nFor argument usage refer to `§help`", color=0xFF5555)
 argument_error.set_author(name="[Error]", url="https://github.com/bj4rnee/DeformBot#command-arguments",
                           icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
@@ -70,11 +71,11 @@ def fetch_image(message):
     return
 
 
-# args: sean_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
-#       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
+# args: sean_carving, noise, blur, contrast, swirl, implode, distort (perspective), invert, disable compression, grayscale
+#       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      p=0                    i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
 # TODO add args, better noise! -charcoal
-def distort_image(fname, args):
+def distort_image(fname, args, ch):
     """function to distort an image using the magick library"""
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
@@ -124,6 +125,12 @@ def distort_image(fname, args):
                 cast_float = float(cast_int)/100
                 build_str += f" -implode {cast_float} "
             continue
+        if e.startswith('p'): #perspective-distort-flag
+            cast_int = int(e[1:4])
+            if cast_int >= 1 and cast_int <= 100:
+                cast_float = "{:.2f}".format(interp(cast_int,[1,100],[0.1,10.0])) #map float to meaningful power range
+                build_str += f" -define shepards:power={cast_float} -distort Shepards '30,11 20,11  48,29 58,29' "
+            continue
         if e.startswith('i'): #invert-flag
             build_str += f" -negate "
             continue
@@ -132,6 +139,8 @@ def distort_image(fname, args):
         if e.startswith('g'): #greyscale-flag
             build_str += f" -grayscale average "
             continue
+        argument_error.description = "Invalid argument: " + e +".\nFor argument usage refer to `§help`"
+        ch.send(embed=argument_error)
         if DEBUG:
             print("[ERROR]: invalid argument '"+ e +"'")
 
@@ -208,7 +217,7 @@ async def crashdump(ctx):
 @bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
-    helpstr_args = "\n\n**Arguments:**\n`l`:  Sean-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  distortion effect\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
+    helpstr_args = "\n\n**Arguments:**\n`l`:  Sean-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`p`:  perspective distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
     helpstr_usage = "\n\n**Usage:**\n`§deform [option0][value] [option1][value] ...`\nExamples:\n _§deform s35 n95 l45 c+40 b1_\n_§deform l50 s25 c+30 n70 g_"
     help_embed = discord.Embed(
         description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
@@ -231,6 +240,7 @@ async def deform(ctx, *args):
 
         msg = ctx.message  # msg with command in it
         reply_msg = None  # original msg which was replied to with command
+        ch = msg.channel
 
         if msg.reference != None: # if msg is a reply
             reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
@@ -256,7 +266,7 @@ async def deform(ctx, *args):
                         out_file.flush()
 
                         # distort the file
-                        distorted_file = distort_image(image_name, args)
+                        distorted_file = distort_image(image_name, args, ch)
 
                         if DEBUG:
                             print("distorted image: " + image_name)
@@ -310,7 +320,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                                 out_file.flush()
 
                                 # unfortunately await can't be used here
-                                distorted_file = distort_image(image_name, ())
+                                distorted_file = distort_image(image_name, (), ch)
 
                                 if DEBUG:
                                     print("distorted image: " + image_name)

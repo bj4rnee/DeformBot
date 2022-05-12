@@ -3,3 +3,4 @@ python-dotenv
 pillow
 psutil
 requests
+numpy
