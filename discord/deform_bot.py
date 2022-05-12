@@ -18,7 +18,7 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 
-VERSION = "1.2.3_dev"
+VERSION = "1.2.4_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -202,8 +202,8 @@ async def crashdump(ctx):
 @bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
-    helpstr_args = "\n\n**Arguments:**\n`l`:  Sean-Carving factor\n`s`:  swirl (degrees)\n`s`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  distortion effect\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nAll args accept integer values, I advise to play around with those values to find something that looks good."
-    helpstr_usage = "\n\n**Usage:**\n`§deform [options]`\nExamples:\n _§deform s35 n95 l45 c+40 b1_\n_§deform l50 s25 c+30 n70 g_"
+    helpstr_args = "\n\n**Arguments:**\n`l`:  Sean-Carving factor\n`s`:  swirl (degrees)\n`s`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  distortion effect\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
+    helpstr_usage = "\n\n**Usage:**\n`§deform [option0][value] [option1][value] ...`\nExamples:\n _§deform s35 n95 l45 c+40 b1_\n_§deform l50 s25 c+30 n70 g_"
     help_embed = discord.Embed(
         description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
     help_embed.set_author(name="Hi, I'm an Open Source image distortion discord bot!", url="https://bjarne.dev/",
