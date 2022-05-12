@@ -73,7 +73,7 @@ def fetch_image(message):
 # args: sean_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
-# TODO add args, better noise!
+# TODO add args, better noise! -charcoal
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     image = Image.open(os.path.join("raw", fname))
@@ -98,25 +98,30 @@ def distort_image(fname, args):
                 l = 0
             continue
         if e.startswith('n'): #noise-flag
-            cast_int = int(e[1:3])
+            cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
-                build_str += f" +noise Gaussian -attenuate {cast_float} "
+                build_str += f" +noise Multiplicative -attenuate {cast_float} "
             continue
         if e.startswith('b'): #blur-flag
-            cast_int = int(e[1:3])
+            cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 build_str += f" -blur 0x{cast_int} "
             continue
         if e.startswith('c'): #contrast-flag
-            cast_int = int(e[1:])
+            cast_int = int(e[1:5])
             if cast_int >= -100 and cast_int <= 100:
                 build_str += f" -brightness-contrast 0x{cast_int} "
             continue
         if e.startswith('s'): #swirl-flag
-            cast_int = int(e[1:])
+            cast_int = int(e[1:5])
             if cast_int >= -360 and cast_int <= 360:
                 build_str += f" -swirl {cast_int} "
+            continue
+        if e.startswith('o'): #implode-flag
+            cast_int = int(e[1:4])
+            if cast_int >= 1 and cast_int <= 100:
+                build_str += f" -implode {cast_int} "
             continue
         if e.startswith('i'): #invert-flag
             build_str += f" -negate "
