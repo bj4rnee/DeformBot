@@ -70,7 +70,7 @@ def fetch_image(message):
     return
 
 
-# args: sean_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
+# args: seam_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
 def distort_image(fname, args):
@@ -83,17 +83,17 @@ def distort_image(fname, args):
     l=60
     # TODO better compression
     if ("u" not in args): # disable-compression flag
-        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 85% "
+        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 80% "
     if not any("l" in value for value in args): # if l-flag is not in args
         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
     for e in args:
-        if e.startswith('l'): #iterations flag
+        if e.startswith('l'): #sc-factor-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
                 l = cast_int
                 build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
-            else: # no sean-carivng
+            else: # no seam-carivng
                 l = 0
             continue
         if e.startswith('n'): #noise-flag
