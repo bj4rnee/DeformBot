@@ -34,18 +34,18 @@ Additionally `§deform` alias `§d` causes the bot to use the attached image of 
 # Command arguments
 Arguments for the `§d` command can be used as followed:\
 `§deform [option0][value] [option1][value] ...`
-| option | description                 | value type | value range  |
-|:------:|-----------------------------|:----------:|--------------|
-| l      | seam carving factor         | int        | [0; 100]     |
-| s      | swirl                       | int        | [-360; +360] |
-| n      | noise                       | int        | [0; 100]     |
-| b      | blur                        | int        | [0; 100]     |
-| c      | contrast                    | int        | [-100; 100]  |
-| o      | implode                     | int        | [0; 100]     |
-| p      | perspective distortion (IWD)| int        | [0; 100]     |
-| i      | invert colors               | bool       |              |
-| g      | grayscale colors            | bool       |              |
-| u      | disable compression         | bool       |              |
+| option | description               | value type | value range  |
+|:------:|---------------------------|:----------:|--------------|
+| l      | seam carving factor       | int        | [0; 100]     |
+| s      | swirl                     | int        | [-360; +360] |
+| n      | noise                     | int        | [0; 100]     |
+| b      | blur                      | int        | [0; 100]     |
+| c      | contrast                  | int        | [-100; 100]  |
+| o      | implode                   | int        | [0; 100]     |
+| p      | shepard's distortion (IWD)| int        | [0; 100]     |
+| i      | invert colors             | bool       |              |
+| g      | grayscale colors          | bool       |              |
+| u      | disable compression       | bool       |              |
 
 All arguments can be arbitrarily combined or left out.
 Only integer values are accepted, I advise to play around with those values to find something that looks good.\

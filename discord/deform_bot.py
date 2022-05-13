@@ -9,6 +9,7 @@ import uuid
 import shutil
 import asyncio
 import traceback
+import math
 from numpy import interp
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
@@ -75,86 +76,102 @@ def fetch_image(message):
 # args: seam_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
-# TODO add args, better noise! -charcoal
+# TODO add args, better noise! -anagraph, wave
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag
     global argument_error
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
-    
-    #build the command string
-    build_str = " "
-    l=60
 
-    if ("u" not in args): # disable-compression flag
-        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 80% " # -colorspace RGB
-    if not any("l" in value for value in args): # if l-flag is not in args
+    # build the command string
+    build_str = " "
+    l = 60
+
+    if ("u" not in args):  # disable-compression flag
+        # no '-colorspace RGB'
+        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 80% "
+    if not any("l" in value for value in args):  # if l-flag is not in args
         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
     for e in args:
-        if e.startswith('l'): #sc-factor-flag
+        if e.startswith('l'):  # sc-factor-flag
             cast_int = int(e[1:3])
             if cast_int >= 1 and cast_int <= 100:
                 l = cast_int
                 build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
-            else: # no seam-carivng
+            else:  # no seam-carivng
                 l = 0
             continue
-        if e.startswith('n'): #noise-flag
+        if e.startswith('n'):  # noise-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
                 build_str += f" +noise Gaussian -attenuate {cast_float} "
             continue
-        if e.startswith('b'): #blur-flag
+        if e.startswith('b'):  # blur-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 build_str += f" -blur 0x{cast_int} "
             continue
-        if e.startswith('c'): #contrast-flag
+        if e.startswith('c'):  # contrast-flag
             cast_int = int(e[1:5])
             if cast_int >= -100 and cast_int <= 100:
                 build_str += f" -brightness-contrast 0x{cast_int} "
             continue
-        if e.startswith('s'): #swirl-flag
+        if e.startswith('s'):  # swirl-flag
             cast_int = int(e[1:5])
             if cast_int >= -360 and cast_int <= 360:
                 build_str += f" -swirl {cast_int} "
             continue
-        if e.startswith('o'): #implode-flag
+        if e.startswith('o'):  # implode-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
                 build_str += f" -implode {cast_float} "
             continue
-        if e.startswith('p'): #perspective-distort-flag
+        if e.startswith('d'):  # shepards-distortion-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
-                cast_float = "{:.1f}".format(interp(cast_int,[1,100],[0.1,12.0])) #map float to meaningful power range
+                # map float to meaningful power range
+                cast_float = "{:.1f}".format(
+                    interp(cast_int, [1, 100], [0.1, 12.0]))
                 points = []
-                x_th = 0.15*imgdimens[0]
-                y_th = 0.15*imgdimens[1]
-                for i in range(3): #generate 3 random points
-                    points.append(tuple([random.randint(x_th, imgdimens[0]-x_th),random.randint(y_th, imgdimens[1]-y_th)]))
-                    #for every point, generate another random point in a short range
-                    points.append(tuple([random.randint(),]))
-                #                                                        anker points: (1,1)                  (x,1)                               (1,y)                                                (x,y)
-                build_str += f" -define shepards:power={cast_float} -distort Shepards '1,1,1,1 {imgdimens[0]-1},1,{imgdimens[0]-1},1 1,{imgdimens[1]-1},1,{imgdimens[1]-1} {imgdimens[0]-1},{imgdimens[1]-1},{imgdimens[0]-1},{imgdimens[1]-1} ' "
+                x_th = round(0.15*imgdimens[0]) # threshholds
+                y_th = round(0.15*imgdimens[1])
+                # radius of circle taking up 20% of the area. r^2*π=0.2*x*y
+                max_radius = (math.sqrt(imgdimens[0]) * math.sqrt(imgdimens[1]))/(math.sqrt(5*math.pi))
+                number_of_points = 3
+                for i in range(number_of_points):  # generate 3 random points
+                    points.append(tuple([random.randint(x_th, imgdimens[0]-x_th), random.randint(y_th, imgdimens[1]-y_th)]))
+                    # for every point, generate another random point in a short range
+                    alpha = 2 * math.pi * random.random()  # random angle
+                    # random radius within max_radius. Note: the distribution is not linear
+                    sigma = interp(random.randint(1,1000), [1, 1000], [0.25, 1])
+                    r = max_radius * math.sqrt(sigma)
+                    # calculating coordinates
+                    x_coord = round(r * math.cos(alpha) + points[-1][0])
+                    y_coord = round(r * math.sin(alpha) + points[-1][1])
+                    points.append(tuple([x_coord, y_coord]))
+                # params                                                anker points: (1,1)                  (x,1)                               (1,y)                                                (x,y)
+                build_str += f" -define shepards:power={cast_float} -distort Shepards '1,1,1,1 {imgdimens[0]-1},1,{imgdimens[0]-1},1 1,{imgdimens[1]-1},1,{imgdimens[1]-1} {imgdimens[0]-1},{imgdimens[1]-1},{imgdimens[0]-1},{imgdimens[1]-1} "
+                for j in range(number_of_points):
+                    build_str += f"{points[-2][0]},{points.pop(-2)[1]},{points[-1][0]},{points.pop(-1)[1]} "
+                build_str += "' "
             continue
-        if e.startswith('i'): #invert-flag
+        if e.startswith('i'):  # invert-flag
             build_str += f" -negate "
             continue
         if e.startswith('u'):
             continue
-        if e.startswith('g'): #greyscale-flag
+        if e.startswith('g'):  # greyscale-flag
             build_str += f" -grayscale average "
             continue
-        argument_error.description = "Invalid argument: " + e +".\nFor argument usage refer to `§help`"
+        argument_error.description = "Invalid argument: " + \
+            e + ".\nFor argument usage refer to `§help`"
         arg_error_flag = True
         if DEBUG:
-            print("[ERROR]: invalid argument '"+ e +"'")
-
+            print("[ERROR]: invalid argument '" + e + "'")
 
     # added compression in command
     distortcmd = f"magick " + \
@@ -172,12 +189,13 @@ def distort_image(fname, args):
     image.save(buf, filetype)
     image.close()
 
-    # backup file to /
+    # backup file to /db_outputs
     bkp_path = os.path.join("/home", "db_outputs")
     if os.path.exists(bkp_path):
         if DEBUG:
-            print("[DEBUG]: free backup space: " + str(psutil.disk_usage(bkp_path).free) + "B")
-        if psutil.disk_usage(bkp_path).free >= 	536870912:
+            print("[DEBUG]: free backup space: " +
+                  str(psutil.disk_usage(bkp_path).free) + "B")
+        if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
             try:
                 shutil.copy(f"results/{fname}", bkp_path)
                 if DEBUG:
@@ -185,7 +203,8 @@ def distort_image(fname, args):
             except:
                 traceback.print_exc()
         else:
-            print("IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
+            print(
+                "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     return discord.File(os.path.join("results", f"{fname}"))
 
@@ -230,7 +249,7 @@ async def crashdump(ctx):
 @bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
-    helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`p`:  perspective distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
+    helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  shepard's distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
     helpstr_usage = "\n\n**Usage:**\n`§deform [option0][value] [option1][value] ...`\nExamples:\n _§deform s35 n95 l45 c+40 b1_\n_§deform l50 s25 c+30 n70 g_"
     help_embed = discord.Embed(
         description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
@@ -243,7 +262,7 @@ async def help(ctx):
 async def deform(ctx, *args):
     global arg_error_flag
     async with lock:
-        #set error flag to false
+        # set error flag to false
         arg_error_flag = False
         # first delete the existing files
         for delf in os.listdir("raw"):
@@ -258,7 +277,7 @@ async def deform(ctx, *args):
         reply_msg = None  # original msg which was replied to with command
         ch = msg.channel
 
-        if msg.reference != None: # if msg is a reply
+        if msg.reference != None:  # if msg is a reply
             reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
             msg = reply_msg
 
@@ -278,7 +297,7 @@ async def deform(ctx, *args):
                             print("───────────" + image_name + "───────────")
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
-                        #flush the buffer, this fixes ReadException
+                        # flush the buffer, this fixes ReadException
                         out_file.flush()
 
                         # distort the file
@@ -289,7 +308,8 @@ async def deform(ctx, *args):
 
                         if DEBUG:
                             print("distorted image: " + image_name)
-                            print("──────────────────────────────────────────────────────────────")
+                            print(
+                                "──────────────────────────────────────────────────────────────")
                         # send distorted image
                         if DEBUG:
                             await ctx.send("[Debug] Processed image: " + image_name + "\nargs=" + str(args), file=distorted_file)
@@ -333,7 +353,8 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 
                             with open(os.path.join("raw", image_name), 'wb') as out_file:
                                 if DEBUG:
-                                    print("───────────" + image_name + "───────────")
+                                    print("───────────" +
+                                          image_name + "───────────")
                                     print("saving image: " + image_name)
                                 shutil.copyfileobj(r.raw, out_file)
                                 out_file.flush()
@@ -343,7 +364,8 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 
                                 if DEBUG:
                                     print("distorted image: " + image_name)
-                                    print("──────────────────────────────────────────────────────────────")
+                                    print(
+                                        "──────────────────────────────────────────────────────────────")
                                 # send distorted image
                                 if DEBUG:
                                     await ch.send("[Debug] Processed image: " + image_name, file=distorted_file)
