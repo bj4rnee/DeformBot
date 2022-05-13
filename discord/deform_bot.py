@@ -9,6 +9,7 @@ import uuid
 import shutil
 import asyncio
 import traceback
+from numpy import interp
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import discord
@@ -18,7 +19,7 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 
-VERSION = "1.2.3_dev"
+VERSION = "1.2.5_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -29,6 +30,7 @@ lock = asyncio.Lock()  # Doesn't require event loop
 
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
+arg_error_flag = False
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
                    description="an Open Source image distortion discord bot")
@@ -46,7 +48,7 @@ embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
                                  icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
 argument_error = discord.Embed(
-    description="Can't parse arguments", color=0xFF5555)
+    description="Invalid argument: " + ".\nFor argument usage refer to `§help`", color=0xFF5555)
 argument_error.set_author(name="[Error]", url="https://github.com/bj4rnee/DeformBot#command-arguments",
                           icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
@@ -73,17 +75,20 @@ def fetch_image(message):
 # args: seam_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
+# TODO add args, better noise! -charcoal
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
+    global arg_error_flag
+    global argument_error
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
     
     #build the command string
     build_str = " "
     l=60
-    # TODO better compression
+
     if ("u" not in args): # disable-compression flag
-        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -colorspace RGB -quality 80% "
+        build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 80% " # -colorspace RGB
     if not any("l" in value for value in args): # if l-flag is not in args
         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
@@ -97,25 +102,45 @@ def distort_image(fname, args):
                 l = 0
             continue
         if e.startswith('n'): #noise-flag
-            cast_int = int(e[1:3])
+            cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
                 build_str += f" +noise Gaussian -attenuate {cast_float} "
             continue
         if e.startswith('b'): #blur-flag
-            cast_int = int(e[1:3])
+            cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 build_str += f" -blur 0x{cast_int} "
             continue
         if e.startswith('c'): #contrast-flag
-            cast_int = int(e[1:])
+            cast_int = int(e[1:5])
             if cast_int >= -100 and cast_int <= 100:
                 build_str += f" -brightness-contrast 0x{cast_int} "
             continue
         if e.startswith('s'): #swirl-flag
-            cast_int = int(e[1:])
+            cast_int = int(e[1:5])
             if cast_int >= -360 and cast_int <= 360:
                 build_str += f" -swirl {cast_int} "
+            continue
+        if e.startswith('o'): #implode-flag
+            cast_int = int(e[1:4])
+            if cast_int >= 1 and cast_int <= 100:
+                cast_float = float(cast_int)/100
+                build_str += f" -implode {cast_float} "
+            continue
+        if e.startswith('p'): #perspective-distort-flag
+            cast_int = int(e[1:4])
+            if cast_int >= 1 and cast_int <= 100:
+                cast_float = "{:.1f}".format(interp(cast_int,[1,100],[0.1,12.0])) #map float to meaningful power range
+                points = []
+                x_th = 0.15*imgdimens[0]
+                y_th = 0.15*imgdimens[1]
+                for i in range(3): #generate 3 random points
+                    points.append(tuple([random.randint(x_th, imgdimens[0]-x_th),random.randint(y_th, imgdimens[1]-y_th)]))
+                    #for every point, generate another random point in a short range
+                    points.append(tuple([random.randint(),]))
+                #                                                        anker points: (1,1)                  (x,1)                               (1,y)                                                (x,y)
+                build_str += f" -define shepards:power={cast_float} -distort Shepards '1,1,1,1 {imgdimens[0]-1},1,{imgdimens[0]-1},1 1,{imgdimens[1]-1},1,{imgdimens[1]-1} {imgdimens[0]-1},{imgdimens[1]-1},{imgdimens[0]-1},{imgdimens[1]-1} ' "
             continue
         if e.startswith('i'): #invert-flag
             build_str += f" -negate "
@@ -125,6 +150,8 @@ def distort_image(fname, args):
         if e.startswith('g'): #greyscale-flag
             build_str += f" -grayscale average "
             continue
+        argument_error.description = "Invalid argument: " + e +".\nFor argument usage refer to `§help`"
+        arg_error_flag = True
         if DEBUG:
             print("[ERROR]: invalid argument '"+ e +"'")
 
@@ -166,8 +193,10 @@ def distort_image(fname, args):
 @bot.event
 async def on_ready():
     if DEBUG:
+        print("──────────────────────────────────────────────────────────────")
         print("starting DeformBot " + VERSION + " ...")
-    print(f'{bot.user} has connected to Discord!')
+        print(f'{bot.user} has connected to Discord!')
+        print("──────────────────────────────────────────────────────────────")
     # bot.remove_command('help')
 
 
@@ -188,17 +217,23 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-    # if message.content == '§help':
-    #     embed = discord.Embed(title="[Debug embed]")
-    #     response = "Hi, I'm an Open Source image distortion discord bot!\n[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\nCommands:"
-    #     await message.channel.send(embed)
+
+@bot.command(name='crashdump', help='Outputs last stacktrace', aliases=['c', 'cd', 'trace'])
+async def crashdump(ctx):
+    embed_crash = discord.Embed(title=':x: Event Error', color=0xFF5555)
+    #embed_crash.add_field(name='Event', value=event)
+    embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
+    embed_crash.timestamp = datetime.utcnow()
+    await ctx.send(embed=embed_crash)
 
 
 @bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
+    helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`p`:  perspective distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
+    helpstr_usage = "\n\n**Usage:**\n`§deform [option0][value] [option1][value] ...`\nExamples:\n _§deform s35 n95 l45 c+40 b1_\n_§deform l50 s25 c+30 n70 g_"
     help_embed = discord.Embed(
-        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it.", color=rand_color)
+        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
     help_embed.set_author(name="Hi, I'm an Open Source image distortion discord bot!", url="https://bjarne.dev/",
                           icon_url="https://cdn.discordapp.com/avatars/971742838024978463/4e6548403fb46347b84de17fe31a45b9.webp")
     await ctx.send(embed=help_embed)
@@ -206,7 +241,10 @@ async def help(ctx):
 
 @bot.command(name='deform', help='deform an image', aliases=['d', 'D' 'distort'])
 async def deform(ctx, *args):
+    global arg_error_flag
     async with lock:
+        #set error flag to false
+        arg_error_flag = False
         # first delete the existing files
         for delf in os.listdir("raw"):
             if delf.endswith(".jpg"):
@@ -218,6 +256,7 @@ async def deform(ctx, *args):
 
         msg = ctx.message  # msg with command in it
         reply_msg = None  # original msg which was replied to with command
+        ch = msg.channel
 
         if msg.reference != None: # if msg is a reply
             reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
@@ -239,12 +278,14 @@ async def deform(ctx, *args):
                             print("───────────" + image_name + "───────────")
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
-
-                        # parse args
-                        parser = ArgumentParser()
+                        #flush the buffer, this fixes ReadException
+                        out_file.flush()
 
                         # distort the file
                         distorted_file = distort_image(image_name, args)
+
+                        if arg_error_flag:
+                            await ctx.send(embed=argument_error)
 
                         if DEBUG:
                             print("distorted image: " + image_name)
@@ -295,6 +336,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                                     print("───────────" + image_name + "───────────")
                                     print("saving image: " + image_name)
                                 shutil.copyfileobj(r.raw, out_file)
+                                out_file.flush()
 
                                 # unfortunately await can't be used here
                                 distorted_file = distort_image(image_name, ())
