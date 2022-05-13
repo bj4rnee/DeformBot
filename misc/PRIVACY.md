@@ -6,7 +6,7 @@
 
 DeformBot (“we”, “our”, "us" or "bot") provides a discord and twitter bot service subject to the privacy policy described below (“Privacy Policy”).
 
-By using the bot, you agree to the Policy policy. If you do not agree with the Policy policy, you may not use the Services.
+By using the bot, you agree to the Privacy Policy. If you do not agree with the Privacy Policy, you may not use the Services.
 
 This service is completely free to use and is in no way affiliated with Discord or Twitter.
 
@@ -28,8 +28,8 @@ Your privacy is very important to us. It is our policy to respect your privacy.
 <br>
 
 2. **Changes to the policy**
-    * Any changes to the Privacy policy shall go into effect immediately after the change unless stated otherwise. 
-    * We may at any moment change the privacy policy without prior notice. If you use the Service after the changes went into effect you agree to be bound by such modification(s).
+    * Any changes to the Privacy Policy shall go into effect immediately after the change unless stated otherwise. 
+    * We may at any moment change the Privacy Policy without prior notice. If you use the Service after the changes went into effect you agree to be bound by such modification(s).
 
 <br><br>
 
