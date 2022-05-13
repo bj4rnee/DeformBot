@@ -36,7 +36,7 @@ Arguments for the `§d` command can be used as followed:\
 `§deform [option0][value] [option1][value] ...`
 | option | description                 | value type | value range  |
 |:------:|-----------------------------|:----------:|--------------|
-| l      | sean carving factor         | int        | [0; 100]     |
+| l      | seam carving factor         | int        | [0; 100]     |
 | s      | swirl                       | int        | [-360; +360] |
 | n      | noise                       | int        | [0; 100]     |
 | b      | blur                        | int        | [0; 100]     |
