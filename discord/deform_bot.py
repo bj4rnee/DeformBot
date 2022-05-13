@@ -20,7 +20,7 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 
-VERSION = "1.2.5_dev"
+VERSION = "1.2.6_dev"
 # Turn off in production!
 DEBUG = True
 
