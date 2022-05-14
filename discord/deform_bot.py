@@ -1,6 +1,7 @@
 # this is the bot.py
 import os
 import random
+from this import d
 import time
 from urllib import request
 import psutil
@@ -209,6 +210,7 @@ def distort_image(fname, args):
     #         print(
     #             "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
+    buf.close
     return discord.File(os.path.join("results", f"{fname}"))
 
 
@@ -243,13 +245,13 @@ async def on_message(message):
 @bot.command(name='crashdump', help='Outputs last stacktrace', aliases=['c', 'cd', 'trace'])
 async def crashdump(ctx):
     #tracker.print_diff() # this termporarly solves schroedingers memory leak??
-    all_objects = muppy.get_objects()
+    all_objects = muppy.get_objects(include_frames=True)
     sum1 = summary.summarize(all_objects)
     summary.print_(sum1)
     embed_crash = discord.Embed(title=':x: Event Error', color=0xFF5555)
     #embed_crash.add_field(name='Event', value=event)
     #embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
-    embed_crash.description = "```collecting traces...```"
+    embed_crash.description = "```diff\n- collecting traces...```"
     embed_crash.timestamp = datetime.utcnow()
     await ctx.send(embed=embed_crash)
 
@@ -310,7 +312,7 @@ async def deform(ctx, *args):
 
                         # distort the file
                         distorted_file = distort_image(image_name, args)
-
+                        
                         if arg_error_flag:
                             await ctx.send(embed=argument_error)
 
