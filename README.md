@@ -20,10 +20,10 @@
 - Made with ❤️ and python
 
 # DeformBot
-An Open Source Image distortion discord bot based on the old version of [@DistortBot](https://twitter.com/DistortBot) on twitter build by [@SergioSV96](https://github.com/SergioSV96)
+An Open Source Image distortion discord bot based on the old version of [@DistortBot](https://twitter.com/DistortBot) on twitter build by [@SergioSV96](https://github.com/SergioSV96).
 
 # Add to your server
-[click here](https://discord.com/oauth2/authorize?client_id=971742838024978463&permissions=140660558912&scope=bot) to add DeformBot to your discord server
+[click here](https://discord.com/oauth2/authorize?client_id=971742838024978463&permissions=140660558912&scope=bot) to add DeformBot to your discord server.
 
 # Usage
 DeformBot's command prefix is `§`.\
@@ -50,14 +50,22 @@ Arguments for the `§d` command can be used as followed:\
 All arguments can be arbitrarily combined or left out.
 Only integer values are accepted, I advise to play around with those values to find something that looks good.\
 \
-Examples:\
-_§deform_\
-_§deform s35 n95 l45 c+40 b1_\
-_§deform l50 s25 c+30 n70 g_\
-_§deform l0 u_ (this outputs the original image)
+<ins>Examples for Discord:</ins>\
+`§deform` (default arguments)\
+`§deform s35 n95 l45 c+40 b1`\
+`§deform l50 s25 c+30 n70 g`\
+`§deform l0 u` (this outputs the original image)
 
 # Twitter
-[@Deformbot](https://twitter.com) on Twitter will distort an image, if you tag him in the comments.
+[@DeformBot](https://twitter.com/DeformBot) on Twitter will distort an image, if you tag him in the comments.\
+To use command arguments simply append them after the mention.\
+`@DeformBot [option0][value] [option1][value] ...`\
+\
+<ins>Examples for Twitter:</ins>\
+`@DeformBot` (default arguments)\
+`@DeformBot s35 n95 l45 c+40 b1`\
+`@DeformBot l50 s25 c+30 n70 g`\
+`@DeformBot l0 u` (this outputs the original image)
 
 # Privacy policy
 [Here](https://github.com/bj4rnee/DeformBot/blob/main/misc/PRIVACY.md) you can check out DeformBot's privacy policy.
