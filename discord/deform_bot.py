@@ -11,6 +11,7 @@ import shutil
 import asyncio
 import traceback
 import math
+import gc
 from numpy import interp
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
@@ -32,7 +33,6 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 COMMAND_PREFIX = '§'
 lock = asyncio.Lock()  # Doesn't require event loop
 tracker = SummaryTracker()
-
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
@@ -194,21 +194,21 @@ def distort_image(fname, args):
     image.close()
 
     # backup file to /db_outputs
-    # bkp_path = os.path.join("/home", "db_outputs")
-    # if os.path.exists(bkp_path):
-    #     if DEBUG:
-    #         print("[DEBUG]: free backup space: " +
-    #               str(psutil.disk_usage(bkp_path).free) + "B")
-    #     if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
-    #         try:
-    #             shutil.copy(f"results/{fname}", bkp_path)
-    #             if DEBUG:
-    #                 print(f"stored image: {fname}")
-    #         except:
-    #             traceback.print_exc()
-    #     else:
-    #         print(
-    #             "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
+    bkp_path = os.path.join("/home", "db_outputs")
+    if os.path.exists(bkp_path):
+        if DEBUG:
+            print("[DEBUG]: free backup space: " +
+                  str(psutil.disk_usage(bkp_path).free) + "B")
+        if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
+            try:
+                shutil.copy(f"results/{fname}", bkp_path)
+                if DEBUG:
+                    print(f"stored image: {fname}")
+            except:
+                traceback.print_exc()
+        else:
+            print(
+                "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     buf.close
     return discord.File(os.path.join("results", f"{fname}"))
@@ -242,8 +242,8 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-@bot.command(name='crashdump', help='Outputs last stacktrace', aliases=['c', 'cd', 'trace'])
-async def crashdump(ctx):
+@bot.command(name='memtrace', help='Outputs last memorytrace', aliases=['t', 'trace'])
+async def memtrace(ctx):
     #tracker.print_diff() # this termporarly solves schroedingers memory leak??
     all_objects = muppy.get_objects(include_frames=True)
     sum1 = summary.summarize(all_objects)
@@ -252,6 +252,15 @@ async def crashdump(ctx):
     #embed_crash.add_field(name='Event', value=event)
     #embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
     embed_crash.description = "```diff\n- collecting traces...```"
+    embed_crash.timestamp = datetime.utcnow()
+    await ctx.send(embed=embed_crash)
+
+@bot.command(name='garbage', help='triggers garbage collector', aliases=['g', 'gc'])
+async def garbage(ctx):
+    collected = gc.collect() # manually collect garbage
+    print("[Debug] garbage collected: " + str(collected) + " objects")
+    embed_crash = discord.Embed(title=':white_check_mark: Garbage collected.', color=0x55FF55)
+    embed_crash.description = f"```diff\n+ {collected} objects purged```"
     embed_crash.timestamp = datetime.utcnow()
     await ctx.send(embed=embed_crash)
 
