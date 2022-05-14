@@ -4,3 +4,4 @@ pillow
 psutil
 requests
 numpy
+pympler

@@ -20,15 +20,17 @@ from io import BytesIO
 from glob import glob
 from PIL import Image
 from pympler.tracker import SummaryTracker
+from pympler import summary, muppy
 
-VERSION = "1.2.6_debug"
+VERSION = "1.2.7_debug"
 # Turn off in production!
 DEBUG = True
-tracker = SummaryTracker()
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 COMMAND_PREFIX = '§'
 lock = asyncio.Lock()  # Doesn't require event loop
+tracker = SummaryTracker()
 
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
@@ -191,21 +193,21 @@ def distort_image(fname, args):
     image.close()
 
     # backup file to /db_outputs
-    bkp_path = os.path.join("/home", "db_outputs")
-    if os.path.exists(bkp_path):
-        if DEBUG:
-            print("[DEBUG]: free backup space: " +
-                  str(psutil.disk_usage(bkp_path).free) + "B")
-        if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
-            try:
-                shutil.copy(f"results/{fname}", bkp_path)
-                if DEBUG:
-                    print(f"stored image: {fname}")
-            except:
-                traceback.print_exc()
-        else:
-            print(
-                "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
+    # bkp_path = os.path.join("/home", "db_outputs")
+    # if os.path.exists(bkp_path):
+    #     if DEBUG:
+    #         print("[DEBUG]: free backup space: " +
+    #               str(psutil.disk_usage(bkp_path).free) + "B")
+    #     if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
+    #         try:
+    #             shutil.copy(f"results/{fname}", bkp_path)
+    #             if DEBUG:
+    #                 print(f"stored image: {fname}")
+    #         except:
+    #             traceback.print_exc()
+    #     else:
+    #         print(
+    #             "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     return discord.File(os.path.join("results", f"{fname}"))
 
@@ -240,10 +242,14 @@ async def on_message(message):
 
 @bot.command(name='crashdump', help='Outputs last stacktrace', aliases=['c', 'cd', 'trace'])
 async def crashdump(ctx):
-    tracker.print_diff()
+    #tracker.print_diff() # this termporarly solves schroedingers memory leak??
+    all_objects = muppy.get_objects()
+    sum1 = summary.summarize(all_objects)
+    summary.print_(sum1)
     embed_crash = discord.Embed(title=':x: Event Error', color=0xFF5555)
     #embed_crash.add_field(name='Event', value=event)
-    embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
+    #embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
+    embed_crash.description = "```collecting traces...```"
     embed_crash.timestamp = datetime.utcnow()
     await ctx.send(embed=embed_crash)
 
