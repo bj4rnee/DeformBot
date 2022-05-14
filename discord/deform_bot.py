@@ -19,11 +19,12 @@ from dotenv import load_dotenv
 from io import BytesIO
 from glob import glob
 from PIL import Image
+from pympler.tracker import SummaryTracker
 
-VERSION = "1.2.6_dev"
+VERSION = "1.2.6_debug"
 # Turn off in production!
 DEBUG = True
-
+tracker = SummaryTracker()
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 COMMAND_PREFIX = '§'
@@ -85,7 +86,7 @@ def distort_image(fname, args):
     imgdimens = image.width, image.height
 
     # build the command string
-    build_str = " "
+    build_str = " -background '#36393f' "
     l = 60
 
     if ("u" not in args):  # disable-compression flag
@@ -239,6 +240,7 @@ async def on_message(message):
 
 @bot.command(name='crashdump', help='Outputs last stacktrace', aliases=['c', 'cd', 'trace'])
 async def crashdump(ctx):
+    tracker.print_diff()
     embed_crash = discord.Embed(title=':x: Event Error', color=0xFF5555)
     #embed_crash.add_field(name='Event', value=event)
     embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
