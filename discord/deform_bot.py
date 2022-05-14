@@ -73,10 +73,10 @@ def fetch_image(message):
     return
 
 
-# args: seam_carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
+# args: seam-carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
-# TODO add args, better noise! -anagraph, wave
+# TODO better noise! -anagraph, wave
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag
