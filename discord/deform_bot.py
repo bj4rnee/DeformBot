@@ -23,7 +23,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.2.8_dev"
+VERSION = "1.2.9_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -300,7 +300,10 @@ async def deform(ctx, *args):
             msg = reply_msg
 
         try:
-            url = msg.attachments[0].url
+            if len(msg.embeds) <= 0: # no embeds
+                url = msg.attachments[0].url
+            else:
+                url = msg.embeds[0].url
         except IndexError:
             await ctx.send(embed=embed_nofile_error)
             return

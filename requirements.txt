@@ -5,3 +5,4 @@ psutil
 requests
 numpy
 pympler
+tweepy

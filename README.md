@@ -32,7 +32,7 @@ Reacting to an image with the `🤖`-emoji will trigger DeformBot to process it.
 Additionally `§deform` alias `§d` causes the bot to use the attached image of the message containing the command (or the image replied to with a command).
 
 # Command arguments
-Arguments for the `§d` command can be used as followed:\
+Arguments for the `§d` command can be used as follows:\
 `§deform [option0][value] [option1][value] ...`
 | option | description               | value type | value range  |
 |:------:|---------------------------|:----------:|--------------|
@@ -57,7 +57,7 @@ Only integer values are accepted, I advise to play around with those values to f
 `§deform l0 u` (this outputs the original image)
 
 # Twitter
-[@DeformBot](https://twitter.com/DeformBot) on Twitter will distort an image, if you tag him in the comments.\
+[@DeformBot](https://twitter.com/DeformBot) on Twitter will distort an image, if you tag him in the replies.\
 To use command arguments simply append them after the mention.\
 `@DeformBot [option0][value] [option1][value] ...`\
 \
