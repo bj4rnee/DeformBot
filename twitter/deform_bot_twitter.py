@@ -54,21 +54,50 @@ def check_mentions(api, s_id):
     """check mentions in v1.1 api"""
     # Retrieving mentions
     new_since_id = s_id
+    twitter_media_url = ""
     for tweet in tweepy.Cursor(api.mentions_timeline, since_id=s_id, count=100, tweet_mode='extended').items():
         new_since_id = max(tweet.id, new_since_id)
         #os.environ['last_id'] = str(new_since_id)
         set_key("../discord/.env", 'last_id', str(new_since_id))
-        tweet_txt = tweet.text.lower()
+        if hasattr(tweet, 'text'):
+            tweet_txt = tweet.text.lower()
+        else:
+            tweet_txt = ""
         if hasattr(tweet, 'possibly_sensitive'):
             sensitive = tweet.possibly_sensitive
         else:
             sensitive = False
         reply_og_id  = tweet.in_reply_to_status_id # original status (if 'tweet' is a reply)
         if DEBUG:
-            print("[DEBUG] tweet detected: " + tweet_txt + ", " + str(sensitive) + ", " + str(reply_og_id))
-        #media = api.media_upload("created_image.png") # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
+            print("[DEBUG] tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', sensitive: " + str(sensitive) + ", reply: " + str(reply_og_id))
+        
+        if 'media' in tweet.entities: # tweet that mentionions db contains image
+            raw_image = tweet.entities.get('media', [])
+            if(len(raw_image) > 0):
+                twitter_media_url = raw_image[0]['media_url']
+            else:
+                twitter_media_url = "[ERROR] No url found"
+            print(twitter_media_url)
+        else: # tweet that the mentioner replies to contains image
+            if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
+                r_tweet = api.get_status(reply_og_id)
+                if 'media' in r_tweet.entities:
+                    raw_image = r_tweet.entities.get('media', [])
+                    if(len(raw_image) > 0):
+                        twitter_media_url = raw_image[0]['media_url']
+                    else:
+                        twitter_media_url = "[ERROR] No url found"
+                    print(twitter_media_url)
+                else:
+                    api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                    continue
+            else:
+                continue
 
-        api.update_status(status="[DEBUG] the 3rd", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+        #result_img = api.media_upload("created_image.png") # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
+
+        api.update_status(status="[DEBUG] fetching image...", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+        #api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
     return new_since_id
 
 def check_mentions_v2(s_id):
@@ -90,4 +119,4 @@ def check_mentions_v2(s_id):
 while True:
     since_id = check_mentions(api, since_id)
     #since_id = check_mentions_v2(since_id)
-    time.sleep(90)
+    time.sleep(60)

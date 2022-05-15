@@ -15,7 +15,7 @@ from numpy import interp
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from io import BytesIO
 from glob import glob
@@ -84,6 +84,7 @@ def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag
     global argument_error
+    invalid_args_list = []
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
 
@@ -170,13 +171,14 @@ def distort_image(fname, args):
         if e.startswith('g'):  # greyscale-flag
             build_str += f" -grayscale average "
             continue
-        argument_error.description = "Invalid argument: " + \
-            e + ".\nFor argument usage refer to `§help`"
+        invalid_args_list.append(e)
+        argument_error.description = "Invalid argument(s): " + \
+            str(invalid_args_list) + ".\nFor argument usage refer to `§help`"
         arg_error_flag = True
         if DEBUG:
             print("[ERROR]: invalid argument '" + e + "'")
 
-    # added compression in command
+    # note: added compression in command
     distortcmd = f"magick " + \
         os.path.join(
             "raw", f"{fname}") + build_str + os.path.join("results", f"{fname}")
@@ -362,9 +364,16 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                 # fetch and process the image
                 msg = reaction.message
                 ch = msg.channel
+
                 try:
-                    url = msg.attachments[0].url
-                except IndexError:
+                    if len(msg.embeds) <= 0: # no embeds
+                        url = msg.attachments[0].url
+                    else:
+                        url = msg.embeds[0].image.url
+                        if isinstance(url, str) == False:
+                            await ch.send(embed=embed_nofile_error)
+                            return
+                except (IndexError, TypeError):
                     if DEBUG:  # don't send errors on reaction
                         await ch.send(embed=embed_nofile_error)
                     return
@@ -402,5 +411,11 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                             return
         else:
             return
+
+
+@tasks.loop(seconds=60)
+async def newloop():
+    print("loop")
+    # loop
 
 bot.run(TOKEN)
