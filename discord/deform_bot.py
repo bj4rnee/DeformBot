@@ -303,7 +303,7 @@ async def deform(ctx, *args):
             if len(msg.embeds) <= 0: # no embeds
                 url = msg.attachments[0].url
             else:
-                url = msg.embeds[0].url
+                url = msg.embeds[0].image.url
         except IndexError:
             await ctx.send(embed=embed_nofile_error)
             return
