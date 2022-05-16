@@ -450,11 +450,10 @@ async def check_mentions(api, s_id):
         new_since_id = max(tweet.id, new_since_id)
         #os.environ['last_id'] = str(new_since_id)
         set_key(".env", 'last_id', str(new_since_id)) # only works when process is terminated
-        print(tweet)
         if hasattr(tweet, 'text'):
             tweet_txt = tweet.text.lower()
         else:
-            tweet_txt = ""
+            tweet_txt = tweet.full_text.lower()
         if hasattr(tweet, 'possibly_sensitive'):
             sensitive = tweet.possibly_sensitive
         else:
@@ -497,7 +496,7 @@ async def check_mentions(api, s_id):
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
                         out_file.flush()
-                        args = tuple(tweet_txt.split())
+                        args = tuple([x for x in tweet_txt.split() if all(y not in x for y in '@.')]) # remove mention and links from args
                         # distort the file
                         distort_image(image_name, args)
 
