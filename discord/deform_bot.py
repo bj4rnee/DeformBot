@@ -510,9 +510,9 @@ async def check_mentions(api):
                         # send distorted image
                         result_img = api.media_upload(os.path.join("results", image_name)) # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
                         if DEBUG:
-                            await api.update_status(status="[DEBUG] Processed image: " + image_name + "\nargs=" + str(args), in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                            api.update_status(status="[DEBUG] Processed image: " + image_name + "\nargs=" + str(args), in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                             continue
-                        await api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                        api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                         continue
                 else:
                     api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
@@ -529,6 +529,6 @@ async def twitter_bot_loop():
     # execute this every minute
     print("twitter loop...")
     #api.verify_credentials()
-    check_mentions(api)
+    await check_mentions(api)
 
 bot.run(TOKEN)
