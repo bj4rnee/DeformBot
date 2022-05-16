@@ -499,7 +499,7 @@ async def check_mentions(api, s_id):
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
                         out_file.flush()
-                        args =
+                        args = tuple(tweet_txt.split())
                         # distort the file
                         distort_image(image_name, args)
 
