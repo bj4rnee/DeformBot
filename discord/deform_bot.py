@@ -445,6 +445,7 @@ async def check_mentions(api):
     """check mentions in v1.1 api"""
     # Retrieving mentions
     new_since_id = int(os.getenv('last_id'))
+    print(new_since_id)
     twitter_media_url = ""
     for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
         new_since_id = max(tweet.id, new_since_id)
