@@ -29,7 +29,7 @@ VERSION = "1.3.1_dev"
 DEBUG = True
 
 # Turn on if you want to turn of the bot on twitter
-DISABLE_TWITTER = True
+DISABLE_TWITTER = False
 
 # load the env variables
 load_dotenv()
