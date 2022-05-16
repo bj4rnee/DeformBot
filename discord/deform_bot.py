@@ -444,7 +444,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
             return
 
 
-def check_mentions(api, s_id):
+async def check_mentions(api, s_id):
     """check mentions in v1.1 api"""
     # Retrieving mentions
     new_since_id = s_id
@@ -487,11 +487,41 @@ def check_mentions(api, s_id):
                     continue
             else:
                 continue
+        async with lock: # from here proceed with lock!
+            if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
+                if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold():
+                    r = requests.get(twitter_media_url, stream=True)
+                    image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
 
-        #result_img = api.media_upload("created_image.png") # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
+                    with open(os.path.join("raw", image_name), 'wb') as out_file:
+                        if DEBUG:
+                            print("───────────" + image_name + "───────────")
+                            print("saving image: " + image_name)
+                        shutil.copyfileobj(r.raw, out_file)
+                        out_file.flush()
+                        args =
+                        # distort the file
+                        distort_image(image_name, args)
 
-        api.update_status(status="[DEBUG] fetching image...", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
-        #api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
+                        if arg_error_flag:
+                            pass # we're not sending massive amounts of error msgs to twitter
+
+                        if DEBUG:
+                            print("distorted image: " + image_name)
+                            print(
+                                "──────────────────────────────────────────────────────────────")
+                        # send distorted image
+                        result_img = api.media_upload(os.path.join("results", image_name)) # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
+                        if DEBUG:
+                            await api.update_status(status="[DEBUG] Processed image: " + image_name + "\nargs=" + str(args), in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                            continue
+                        await api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                        continue
+                else:
+                    api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                    continue
+
+#api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
     return new_since_id
 
 
