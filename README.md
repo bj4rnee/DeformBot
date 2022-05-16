@@ -43,6 +43,7 @@ Arguments for the `§d` command can be used as follows:\
 | c      | contrast                  | int        | [-100; 100]  |
 | o      | implode                   | int        | [0; 100]     |
 | d      | shepard's distortion (IWD)| int        | [0; 100]     |
+| w      | wave                      | int        | [0; 100]     |
 | i      | invert colors             | bool       |              |
 | g      | grayscale colors          | bool       |              |
 | u      | disable compression       | bool       |              |

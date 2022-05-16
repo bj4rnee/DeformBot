@@ -28,6 +28,9 @@ VERSION = "1.3_dev"
 # Turn off in production!
 DEBUG = True
 
+# Turn on if you want to turn of the bot on twitter
+DISABLE_TWITTER = False
+
 # load the env variables
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -98,7 +101,7 @@ def fetch_image(message):
 # args: seam-carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
-# TODO better noise! -anagraph, wave
+# TODO better noise! -anagraph
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag
@@ -108,7 +111,7 @@ def distort_image(fname, args):
     imgdimens = image.width, image.height
 
     # build the command string
-    build_str = " -background '#36393f' "
+    build_str = """ -background "#36393f" """
     l = 60
 
     if ("u" not in args):  # disable-compression flag
@@ -152,6 +155,12 @@ def distort_image(fname, args):
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
                 build_str += f" -implode {cast_float} "
+            continue
+        if e.startswith('w'):  # wave-flag
+            cast_int = int(e[1:4])
+            if cast_int >= 1 and cast_int <= 100:
+                #cast_float = float(cast_int)/100
+                build_str += f" -wave {cast_int}x{2*cast_int} " # TODO fix image having spikes
             continue
         if e.startswith('d'):  # shepards-distortion-flag
             cast_int = int(e[1:4])
@@ -249,7 +258,10 @@ async def on_ready():
     if DEBUG:
         print("[Twitter] Authentication Successful!")
         print("──────────────────────────────────────────────────────────────")
-    twitter_bot_loop.start()
+    if not DISABLE_TWITTER:
+        twitter_bot_loop.start()
+    else:
+        print("[Twitter] @DefomBot disabled.")
     # bot.remove_command('help')
 
 
@@ -462,26 +474,27 @@ async def check_mentions(api, s_id):
         if DEBUG:
             print("[DEBUG] tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', sensitive: " + str(sensitive) + ", reply: " + str(reply_og_id))
         
-        if 'media' in tweet.entities: # tweet that mentionions db contains image
-            raw_image = tweet.entities.get('media', [])
+        if 'media' in tweet.extended_entities: # tweet that mentionions db contains image
+            raw_image = tweet.extended_entities.get('media', [])
             if(len(raw_image) > 0):
                 twitter_media_url = raw_image[0]['media_url']
             else:
                 twitter_media_url = "[ERROR] No url found"
         else: # tweet that the mentioner replies to contains image
             if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
-                r_tweet = api.get_status(reply_og_id)
-                if 'media' in r_tweet.entities:
-                    raw_image = r_tweet.entities.get('media', [])
+                r_tweet = api.get_status(reply_og_id, tweet_mode='extended')
+                if 'media' in r_tweet.extended_entities: # TODO sometimes this isn't true even if media is shown in tweet
+                    raw_image = r_tweet.extended_entities.get('media', [])
                     if(len(raw_image) > 0):
                         twitter_media_url = raw_image[0]['media_url']
                     else:
                         twitter_media_url = "[ERROR] No url found"
-                else:
+                else: # TODO fix bot responding with error to tweets not trying to send a command
                     api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
             else:
                 continue
+        # TODO delete existing files when twitter request is processed
         async with lock: # from here proceed with lock!
             if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
                 if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold():
@@ -526,9 +539,6 @@ async def check_mentions(api, s_id):
 async def twitter_bot_loop():
     global since_id
     # execute this every minute
-    #s_id = int(os.getenv('last_id'))
-    #set_key("../discord/.env", 'last_id', str(new_since_id)) = 
-    #since_id = await check_mentions(api, since_id)
-    pass
+    since_id = await check_mentions(api, since_id)
 
 bot.run(TOKEN)
