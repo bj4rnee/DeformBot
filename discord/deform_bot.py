@@ -450,7 +450,7 @@ async def check_mentions(api):
     for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
         new_since_id = max(tweet.id, new_since_id)
         #os.environ['last_id'] = str(new_since_id)
-        set_key(".env", 'last_id', str(new_since_id))
+        print(set_key(".env", 'last_id', str(new_since_id)))
         if hasattr(tweet, 'text'):
             tweet_txt = tweet.text.lower()
         else:
