@@ -527,6 +527,7 @@ async def check_mentions(api, s_id):
 # THIS IS THE LOOP FOR THE TWITTER BOT
 @tasks.loop(seconds=60)
 async def twitter_bot_loop():
+    global since_id
     # execute this every minute
     #s_id = int(os.getenv('last_id'))
     #set_key("../discord/.env", 'last_id', str(new_since_id)) = 
