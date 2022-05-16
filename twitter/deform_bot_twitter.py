@@ -1,3 +1,4 @@
+# this is only a part of the twitter bot, separated for testing
 import tweepy
 from pympler import summary, muppy
 from pympler.tracker import SummaryTracker

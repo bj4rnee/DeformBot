@@ -24,12 +24,12 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3_dev"
+VERSION = "1.3.1_dev"
 # Turn off in production!
 DEBUG = True
 
 # Turn on if you want to turn of the bot on twitter
-DISABLE_TWITTER = False
+DISABLE_TWITTER = True
 
 # load the env variables
 load_dotenv()
@@ -474,8 +474,12 @@ async def check_mentions(api, s_id):
         if DEBUG:
             print("[DEBUG] tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', sensitive: " + str(sensitive) + ", reply: " + str(reply_og_id))
         
-        if 'media' in tweet.extended_entities: # tweet that mentionions db contains image
-            raw_image = tweet.extended_entities.get('media', [])
+        if hasattr(tweet, 'extended_entities'):
+            tw_entities = tweet.extended_entities
+        else:
+            tw_entities = tweet.entities
+        if 'media' in tw_entities: # tweet that mentionions db contains image
+            raw_image = tw_entities.get('media', [])
             if(len(raw_image) > 0):
                 twitter_media_url = raw_image[0]['media_url']
             else:
@@ -483,8 +487,12 @@ async def check_mentions(api, s_id):
         else: # tweet that the mentioner replies to contains image
             if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
                 r_tweet = api.get_status(reply_og_id, tweet_mode='extended')
-                if 'media' in r_tweet.extended_entities: # TODO sometimes this isn't true even if media is shown in tweet
-                    raw_image = r_tweet.extended_entities.get('media', [])
+                if hasattr(r_tweet, 'extended_entities'):
+                    r_tw_entities = r_tweet.extended_entities
+                else:
+                    r_tw_entities = r_tweet.entities
+                if 'media' in r_tw_entities: # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix
+                    raw_image = r_tw_entities.get('media', [])
                     if(len(raw_image) > 0):
                         twitter_media_url = raw_image[0]['media_url']
                     else:
