@@ -468,7 +468,6 @@ async def check_mentions(api, s_id):
                 twitter_media_url = raw_image[0]['media_url']
             else:
                 twitter_media_url = "[ERROR] No url found"
-            print(twitter_media_url)
         else: # tweet that the mentioner replies to contains image
             if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
                 r_tweet = api.get_status(reply_og_id)
@@ -478,7 +477,6 @@ async def check_mentions(api, s_id):
                         twitter_media_url = raw_image[0]['media_url']
                     else:
                         twitter_media_url = "[ERROR] No url found"
-                    print(twitter_media_url)
                 else:
                     api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
@@ -496,7 +494,7 @@ async def check_mentions(api, s_id):
                             print("saving image: " + image_name)
                         shutil.copyfileobj(r.raw, out_file)
                         out_file.flush()
-                        args = tuple([x for x in tweet_txt.split() if all(y not in x for y in '@.')]) # remove mention and links from args
+                        args = tuple([x for x in tweet_txt.split() if all(y not in x for y in '@.')]) # remove mention and links from args. Alternatively '/' can be used instead of '.'
                         # distort the file
                         distort_image(image_name, args)
 
@@ -515,7 +513,7 @@ async def check_mentions(api, s_id):
                         api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                         continue
                 else:
-                    api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                    api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg' and '.png' are supported at the moment.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
 
 #api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
@@ -530,6 +528,7 @@ async def twitter_bot_loop():
     # execute this every minute
     #s_id = int(os.getenv('last_id'))
     #set_key("../discord/.env", 'last_id', str(new_since_id)) = 
-    since_id = await check_mentions(api, since_id)
+    #since_id = await check_mentions(api, since_id)
+    pass
 
 bot.run(TOKEN)
