@@ -441,16 +441,16 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
             return
 
 
-async def check_mentions(api):
+async def check_mentions(api, s_id):
     """check mentions in v1.1 api"""
     # Retrieving mentions
-    new_since_id = int(os.getenv('last_id'))
+    new_since_id = s_id
     print(new_since_id)
     twitter_media_url = ""
     for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
         new_since_id = max(tweet.id, new_since_id)
         #os.environ['last_id'] = str(new_since_id)
-        print(set_key(".env", 'last_id', str(new_since_id)))
+        set_key(".env", 'last_id', str(new_since_id)) # only works when process is terminated
         if hasattr(tweet, 'text'):
             tweet_txt = tweet.text.lower()
         else:
@@ -530,6 +530,6 @@ async def twitter_bot_loop():
     # execute this every minute
     #s_id = int(os.getenv('last_id'))
     #set_key("../discord/.env", 'last_id', str(new_since_id)) = 
-    await check_mentions(api)
+    since_id = await check_mentions(api, since_id)
 
 bot.run(TOKEN)
