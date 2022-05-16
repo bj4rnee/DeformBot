@@ -441,12 +441,12 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
             return
 
 
-async def check_mentions(api, s_id):
+async def check_mentions(api):
     """check mentions in v1.1 api"""
     # Retrieving mentions
-    new_since_id = s_id
+    new_since_id = int(os.getenv('last_id'))
     twitter_media_url = ""
-    for tweet in tweepy.Cursor(api.mentions_timeline, since_id=s_id, count=100, tweet_mode='extended').items():
+    for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
         new_since_id = max(tweet.id, new_since_id)
         #os.environ['last_id'] = str(new_since_id)
         set_key("../discord/.env", 'last_id', str(new_since_id))
@@ -519,16 +519,16 @@ async def check_mentions(api, s_id):
                     continue
 
 #api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
+
     return new_since_id
 
 
 # THIS IS THE LOOP FOR THE TWITTER BOT
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=40)
 async def twitter_bot_loop():
-    global since_id
     # execute this every minute
     print("twitter loop...")
-    api.verify_credentials()
-    since_id = check_mentions(api, since_id)
+    #api.verify_credentials()
+    check_mentions(api)
 
 bot.run(TOKEN)
