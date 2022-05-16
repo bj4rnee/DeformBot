@@ -47,13 +47,13 @@ tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
-api = None # twitter api object
+
 
 # UNFORTUNATELY THIS WORKS ONLY IN v1.1 API
 # Authenticate to Twitter
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
-
+api = tweepy.API(auth, wait_on_rate_limit=True) # twitter api object
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
                    description="an Open Source image distortion discord bot")
@@ -236,22 +236,19 @@ def distort_image(fname, args):
 
 @bot.event
 async def on_ready():
-    global api
     if DEBUG:
         print("──────────────────────────────────────────────────────────────")
         print("starting DeformBot " + VERSION + " ...")
         print(f'{bot.user} has connected to Discord!')
     await bot.wait_until_ready()
     # Create API object
-    api_ = tweepy.API(auth, wait_on_rate_limit=True)
     try:
-        api_.verify_credentials()
+        api.verify_credentials()
     except Exception as e:
         raise e
     if DEBUG:
         print("[Twitter] Authentication Successful!")
         print("──────────────────────────────────────────────────────────────")
-    api = api_
     twitter_bot_loop.start()
     # bot.remove_command('help')
 
@@ -530,6 +527,7 @@ async def check_mentions(api, s_id):
 async def twitter_bot_loop():
     global since_id
     # execute this every minute
+    print("twitter loop...")
     api.verify_credentials()
     since_id = check_mentions(api, since_id)
 
