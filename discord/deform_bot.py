@@ -524,11 +524,9 @@ async def check_mentions(api):
 
 
 # THIS IS THE LOOP FOR THE TWITTER BOT
-@tasks.loop(seconds=40)
+@tasks.loop(seconds=60)
 async def twitter_bot_loop():
     # execute this every minute
-    print("twitter loop...")
-    #api.verify_credentials()
     await check_mentions(api)
 
 bot.run(TOKEN)
