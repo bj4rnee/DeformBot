@@ -498,6 +498,7 @@ def check_mentions(api, s_id):
 # THIS IS THE LOOP FOR THE TWITTER BOT
 @tasks.loop(seconds=60)
 async def twitter_bot_loop():
+    global since_id
     # execute this every minute
     since_id = check_mentions(api, since_id)
 
