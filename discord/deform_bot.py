@@ -530,6 +530,7 @@ async def check_mentions(api, s_id):
 async def twitter_bot_loop():
     global since_id
     # execute this every minute
+    api.verify_credentials()
     since_id = check_mentions(api, since_id)
 
 bot.run(TOKEN)
