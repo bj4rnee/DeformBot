@@ -1,4 +1,55 @@
-# this is the bot.py
+# Copyright (C) Bjarne - All Rights Reserved
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either Version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# A copy of the GNU General Public License Version 3 is distributed
+# along with this program and can be found here 
+# <https://github.com/bj4rnee/DeformBot/blob/main/LICENSE>.
+#
+#                          ..:::^^^^^^^^^^^:::..                        
+#                    ..::^^^^^^^^^^^^^^^^^^^^^^^^^::.                   
+#                 .::^^^::::::::::::::::::::::^^^^^^^^^:.               
+#              .:::::::::::::::::::::::::::::^^^^^^^^^^^^^:             
+#            .:::::::::::::::::::::::::::^^^^^^^^^^^^^^^^^^^:.          
+#          .::::::::::^^^^:::::::::::::^~^:^~~!!!!!!!!~~^^^^^^:.        
+#        .::::::^^~~~~~~^^^~::::::::::!~.:!7777777!!!!7!!~^^^^^^:       
+#       ::::::^~!!7777777!^^!::::::::!~.^7777777777777!!!!!!^^^:^^.     
+#     .:::::^~!!77!!77777?7:~~::::::^7:.7?77777777~^^^!7!!!!!~:^::^:    
+#    .::::^^!!77~:.:!77????:~!::::::~7::???????77~.. .^^~!!!!!~:^::::   
+#   .::::^^!777!.  .~?????7:!~::::::^?^.7????????~..    :7!!!!!^:::::.  
+#   :::::^^77777~^~7??????^~!^^^^^^^^77.^?????????!^:..:~77!!!!~.^..::. 
+#  .:::::^:!7777????????7^~!^^^^^^^^^^?!.~?J????????77777777!!!~.^:..:: 
+#  ::::::^^^!7????????7~~!~^^^^^^^^^^^~?!:^?JJJ????????777777!!::^....:.
+# .:::::::^~^^~!77!!~~~!~^^^^^^^^^^^^^^^7?~:~7JJJ???????77777!^.~:.....:
+# .:::::::::^~~~~~~~~~^^^^^^^^^^^^^^^^^^^~77~^^!7?????????7!^::~^......:
+# .::::::::::::^^^^^^^^^^^^^^^^^^^^^^^^^^^^~!7!~^^^^~~~~^^::^~~::.......
+# .::::::::::::::::^^^^^^^^^^^^^^~~~~~^^^^^^^^~~!!!!~~~~~~~~^:::::......
+# .:::::::::::::::^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^:::::::::......
+#  :::::::::::::::^^^^^^~!7777!~~!77777!~^^^^^^^^^^:::::::::::::::......
+#  .::::::::::^::::^:^!??!~~~~7??7!~~!7??7~^^^^^^^:::::::::::::::...... 
+#   :::::::::~77^::^!?7^.......:::::...:^7J?~^^^:~77~::::::::::::.....  
+#   .::::::::~7~!!!77^....................:!?7!!!?!?7:::::::::::......  
+#    .::::::::!~.:::........................:^~~^:^?~:::::::::::.....   
+#     .::::::::!!:. ...........~7^............  .^7!:::::::::::.....    
+#       ::::::::^!~^:.......:~7?7?7~:.........:^!!~:::::::::::.....     
+#        .::::::::^^~~!~!!!!7!~^:^~!7!!!!~~!!!!~^::::::::::::....       
+#          .:::::::::::^^^^::::::::::^^^^^^^^::::::::::::::....         
+#            .:::::::::::::::::::::::::::::::::::::::::::....           
+#              ..:::::::::::::::::::::::::::::::::::::::...             
+#                 ..:::::::::::::::::::::::::::::::::...                
+#                     ...:::::::::::::::::::::::....                    
+#                          .....:::::::::......                         
+#
+#             Written by Bjarne <klar@bjarne.dev>, May 2022
+
 import os
 import random
 import time
@@ -28,8 +79,8 @@ VERSION = "1.3.1_dev"
 # Turn off in production!
 DEBUG = True
 
-# Turn on if you want to turn of the bot on twitter
-DISABLE_TWITTER = False
+# Turn on if you want to disable the bot on twitter
+DISABLE_TWITTER = os.getenv('DISABLE_TWITTER')
 
 # load the env variables
 load_dotenv()
@@ -112,7 +163,7 @@ def distort_image(fname, args):
 
     # build the command string
     build_str = """ -background "#36393f" """
-    l = 60
+    l = 60 # lower this numer = more distortion 
 
     if ("u" not in args):  # disable-compression flag
         # no '-colorspace RGB'
@@ -122,9 +173,9 @@ def distort_image(fname, args):
 
     for e in args:
         if e.startswith('l'):  # sc-factor-flag
-            cast_int = int(e[1:3])
+            cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
-                l = cast_int
+                l = round(interp(cast_int, [1, 100], [99, 5]))
                 build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
             else:  # no seam-carivng
                 l = 0
@@ -160,7 +211,7 @@ def distort_image(fname, args):
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 #cast_float = float(cast_int)/100
-                build_str += f" -wave {cast_int}x{2*cast_int} " # TODO fix image having spikes
+                build_str += f" -wave {round(0.7*cast_int)}x{2*cast_int} " # TODO fix image having spikes
             continue
         if e.startswith('d'):  # shepards-distortion-flag
             cast_int = int(e[1:4])
@@ -250,6 +301,7 @@ async def on_ready():
         print("starting DeformBot " + VERSION + " ...")
         print(f'{bot.user} has connected to Discord!')
     await bot.wait_until_ready()
+    await bot.change_presence(activity=discord.Game(name="§help"))
     # Create API object
     try:
         api.verify_credentials()
