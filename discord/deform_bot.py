@@ -75,7 +75,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.2_dev"
+VERSION = "1.3.3_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -153,7 +153,8 @@ def fetch_image(message):
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
 # note that the default input for 'l' is 43 but it's interpolated to l=60
-# TODO better blur! more noise! -anaglyph
+# TODO better blur!
+# TODO fix int cast failing when wrong arg is input
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag
@@ -185,8 +186,21 @@ def distort_image(fname, args):
         if e.startswith('n'):  # noise-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
-                cast_float = float(cast_int)/100
-                build_str += f" +noise Gaussian -attenuate {cast_float} "
+                if cast_int <= 25:
+                    cast_float = interp(cast_int, [1, 25], [0.1, 1.0])
+                    build_str += f" +noise Gaussian -attenuate {cast_float} "
+                    continue
+                if cast_int <= 50:
+                    cast_float = interp(cast_int, [26, 50], [0.1, 1.0])
+                    build_str += f" +noise Gaussian +noise Gaussian -attenuate {cast_float} "
+                    continue
+                if cast_int <= 75:
+                    cast_float = interp(cast_int, [51, 75], [0.1, 1.0])
+                    build_str += f" +noise Gaussian +noise Gaussian +noise Gaussian -attenuate {cast_float} "
+                    continue
+                if cast_int <= 100:
+                    cast_float = interp(cast_int, [76, 100], [0.1, 1.0])
+                    build_str += f" +noise Gaussian +noise Gaussian +noise Gaussian +noise Gaussian -attenuate {cast_float} "
             continue
         if e.startswith('b'):  # blur-flag
             cast_int = int(e[1:4])
@@ -324,7 +338,7 @@ async def on_ready():
         print("──────────────────────────────────────────────────────────────")
     if not DISABLE_TWITTER:
         twitter_bot_loop.start()
-        #print("this should not be readable")
+        #print("[IMPORTANT] You shouldn't be seeing this message!")
     else:
         print("[Twitter] @DefomBot disabled.")
     # bot.remove_command('help')
