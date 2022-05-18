@@ -75,7 +75,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.1_dev"
+VERSION = "1.3.2_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -152,17 +152,19 @@ def fetch_image(message):
 # args: seam-carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
 #       l=60,         n=0,   b=0,  c=0,      s=0,   o=0      d=0                     i=False,u=False,             g=False
 # defaults values if flag is not set or otherwise specified
-# TODO better noise! -anagraph
+# note that the default input for 'l' is 43 but it's interpolated to l=60
+# TODO better blur! more noise! -anaglyph
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag
     global argument_error
     invalid_args_list = []
+    anaglyph = False
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
 
     # build the command string
-    build_str = """ -background "#36393f" """
+    build_str = """ -background "#36393e" """
     l = 60 # lower this numer = more distortion 
 
     if ("u" not in args):  # disable-compression flag
@@ -175,7 +177,7 @@ def distort_image(fname, args):
         if e.startswith('l'):  # sc-factor-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
-                l = round(interp(cast_int, [1, 100], [99, 5]))
+                l = round(interp(cast_int, [1, 100], [99, 8]))
                 build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
             else:  # no seam-carivng
                 l = 0
@@ -242,6 +244,11 @@ def distort_image(fname, args):
                     build_str += f"{points[-2][0]},{points.pop(-2)[1]},{points[-1][0]},{points.pop(-1)[1]} "
                 build_str += "' "
             continue
+        if e.startswith('a'):  # stereo-flag (aka anaglyph)
+            # -stereo doesnt really work in a single command, therefore anaglyph is always applied last. this is a bug.
+            #build_str += f" -convert {fname} {fname} -composite -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} "
+            anaglyph = True
+            continue
         if e.startswith('i'):  # invert-flag
             build_str += f" -negate "
             continue
@@ -264,6 +271,11 @@ def distort_image(fname, args):
 
     os.system(distortcmd)
 
+    # TODO temporary fix for -composite not working with -stereo in magick7
+    if anaglyph:
+        stereocmd = f"magick composite " + os.path.join("results", f"{fname}") + " " + os.path.join("results", f"{fname}") + f" -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} " + os.path.join("results", f"{fname}")
+        os.system(stereocmd)
+    
     buf = BytesIO()
     buf.name = 'image.jpeg'
 
@@ -312,6 +324,7 @@ async def on_ready():
         print("──────────────────────────────────────────────────────────────")
     if not DISABLE_TWITTER:
         twitter_bot_loop.start()
+        #print("this should not be readable")
     else:
         print("[Twitter] @DefomBot disabled.")
     # bot.remove_command('help')
@@ -554,8 +567,17 @@ async def check_mentions(api, s_id):
                     continue
             else:
                 continue
-        # TODO delete existing files when twitter request is processed
+
         async with lock: # from here proceed with lock!
+            # first delete the existing files
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+
+            # fetch and process the image
             if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
                 if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold():
                     r = requests.get(twitter_media_url, stream=True)

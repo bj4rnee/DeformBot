@@ -23,7 +23,7 @@
 An Open Source Image distortion discord bot based on the old version of [@DistortBot](https://twitter.com/DistortBot) on twitter build by [@SergioSV96](https://github.com/SergioSV96).
 
 # Add to your server
-[click here](https://discord.com/oauth2/authorize?client_id=971742838024978463&permissions=140660558912&scope=bot) to add DeformBot to your discord server.
+[Click here](https://discord.com/oauth2/authorize?client_id=971742838024978463&permissions=140660558912&scope=bot) to add DeformBot to your discord server.
 
 # Usage
 DeformBot's command prefix is `§`.\
@@ -44,6 +44,7 @@ Arguments for the `§d` command can be used as follows:\
 | o      | implode                   | int        | [0; 100]     |
 | d      | shepard's distortion (IWD)| int        | [0; 100]     |
 | w      | wave                      | int        | [0; 100]     |
+| a      | anaglyph (cyan-red 3D)    | bool       |              |
 | i      | invert colors             | bool       |              |
 | g      | grayscale colors          | bool       |              |
 | u      | disable compression       | bool       |              |
