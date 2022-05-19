@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (C) Bjarne - All Rights Reserved
 #
 # This program is free software: you can redistribute it and/or modify
@@ -75,7 +76,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.3_dev"
+VERSION = "1.3.4_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -94,7 +95,7 @@ USER_ID = os.getenv('DB_USER_ID')
 since_id = int(os.getenv('last_id'))
 
 #the bot's command prefix for discord
-COMMAND_PREFIX = '§'
+COMMAND_PREFIX = ['§','$']
 
 lock = asyncio.Lock()  # Doesn't require event loop
 tracker = SummaryTracker()
