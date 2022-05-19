@@ -80,11 +80,12 @@ VERSION = "1.3.4_dev"
 # Turn off in production!
 DEBUG = True
 
+# load the env variables
+load_dotenv()
+
 # Turn on if you want to disable the bot on twitter
 DISABLE_TWITTER = os.getenv('DISABLE_TWITTER')
 
-# load the env variables
-load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 CONSUMER_KEY = os.getenv('TWITTER_OAUTH_CONSUMER_KEY')
 CONSUMER_SECRET = os.getenv('TWITTER_OAUTH_CONSUMER_SECRET')
@@ -172,35 +173,44 @@ def distort_image(fname, args):
     if ("u" not in args):  # disable-compression flag
         # no '-colorspace RGB'
         build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 80% "
-    if not any("l" in value for value in args):  # if l-flag is not in args
+    if any("l" in (v := value) for value in args):  # if l-flag is in args
+        cast_int = int(v[1:4])
+        if cast_int >= 1 and cast_int <= 100:
+            l = round(interp(cast_int, [1, 100], [99, 8]))
+            build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
+        else: # no seam-carivng
+            l = 0
+    else: # l-flag is not in args -> fall back to default l
         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
     for e in args:
+        # note: with heavy noise sc has to run before the image is noisified or it will fail!!
+        # ! sc is now applied above !
         if e.startswith('l'):  # sc-factor-flag
-            cast_int = int(e[1:4])
-            if cast_int >= 1 and cast_int <= 100:
-                l = round(interp(cast_int, [1, 100], [99, 8]))
-                build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
-            else:  # no seam-carivng
-                l = 0
+        #     cast_int = int(e[1:4])
+        #     if cast_int >= 1 and cast_int <= 100:
+        #         l = round(interp(cast_int, [1, 100], [99, 8]))
+        #         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
+        #     else:  # no seam-carivng
+        #         l = 0
             continue
         if e.startswith('n'):  # noise-flag
             cast_int = int(e[1:4])
             if cast_int >= 1 and cast_int <= 100:
                 if cast_int <= 25:
-                    cast_float = interp(cast_int, [1, 25], [0.1, 1.0])
+                    cast_float = round(interp(cast_int, [1, 25], [0.1, 1.0]),2)
                     build_str += f" +noise Gaussian -attenuate {cast_float} "
                     continue
                 if cast_int <= 50:
-                    cast_float = interp(cast_int, [26, 50], [0.1, 1.0])
+                    cast_float = round(interp(cast_int, [26, 50], [0.1, 1.0]),2)
                     build_str += f" +noise Gaussian +noise Gaussian -attenuate {cast_float} "
                     continue
                 if cast_int <= 75:
-                    cast_float = interp(cast_int, [51, 75], [0.1, 1.0])
+                    cast_float = round(interp(cast_int, [51, 75], [0.1, 1.0]),2)
                     build_str += f" +noise Gaussian +noise Gaussian +noise Gaussian -attenuate {cast_float} "
                     continue
                 if cast_int <= 100:
-                    cast_float = interp(cast_int, [76, 100], [0.1, 1.0])
+                    cast_float = round(interp(cast_int, [76, 100], [0.1, 1.0]),2)
                     build_str += f" +noise Gaussian +noise Gaussian +noise Gaussian +noise Gaussian -attenuate {cast_float} "
             continue
         if e.startswith('b'):  # blur-flag
@@ -283,12 +293,12 @@ def distort_image(fname, args):
     distortcmd = f"magick " + \
         os.path.join(
             "raw", f"{fname}") + build_str + os.path.join("results", f"{fname}")
-
+    #print("[CMD] " + distortcmd)
     os.system(distortcmd)
 
     # TODO temporary fix for -composite not working with -stereo in magick7
     if anaglyph:
-        stereocmd = f"magick composite " + os.path.join("results", f"{fname}") + " " + os.path.join("results", f"{fname}") + f" -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} " + os.path.join("results", f"{fname}")
+        stereocmd = f"magick composite " + os.path.join("results", f"{fname}") + " " + os.path.join("results", f"{fname}") + f" -stereo +{random.randint(0, 25)}+{random.randint(3, 20)} " + os.path.join("results", f"{fname}")
         os.system(stereocmd)
     
     buf = BytesIO()
