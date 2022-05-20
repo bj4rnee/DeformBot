@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # A copy of the GNU General Public License Version 3 is distributed
-# along with this program and can be found here 
+# along with this program and can be found here
 # <https://github.com/bj4rnee/DeformBot/blob/main/LICENSE>.
 #
 #                          ..:::^^^^^^^^^^^:::..                        
@@ -76,7 +76,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.4_dev"
+VERSION = "1.3.5_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -292,7 +292,7 @@ def distort_image(fname, args):
     # note: added compression in command
     distortcmd = f"magick " + \
         os.path.join(
-            "raw", f"{fname}") + build_str + os.path.join("results", f"{fname}")
+            "raw", f"{fname}[0]") + build_str + os.path.join("results", f"{fname}")
     #print("[CMD] " + distortcmd)
     os.system(distortcmd)
 
@@ -444,7 +444,7 @@ async def deform(ctx, *args):
             return
         else:
             if url[0:26] == "https://cdn.discordapp.com":
-                if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold():
+                if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                     r = requests.get(url, stream=True)
                     image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
 
@@ -509,7 +509,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                     return
                 else:
                     if url[0:26] == "https://cdn.discordapp.com":
-                        if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold():
+                        if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                             r = requests.get(url, stream=True)
                             image_name = str(uuid.uuid4()) + \
                                 '.jpg'  # generate uuid
@@ -604,7 +604,7 @@ async def check_mentions(api, s_id):
 
             # fetch and process the image
             if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
-                if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold():
+                if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold() or twitter_media_url[-4:].casefold() == ".gif".casefold():
                     r = requests.get(twitter_media_url, stream=True)
                     image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
 

@@ -73,7 +73,7 @@ To use command arguments simply append them after the mention.\
 [Here](https://github.com/bj4rnee/DeformBot/blob/main/misc/PRIVACY.md) you can check out DeformBot's privacy policy.
 
 # What's Next
-GIF support
+GIF support [beta]
 
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea
