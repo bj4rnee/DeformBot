@@ -76,7 +76,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.5_dev"
+VERSION = "1.3.6_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -159,7 +159,7 @@ def fetch_image(message):
 # TODO fix int cast failing when wrong arg is input
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
-    global arg_error_flag
+    global arg_error_flag # True if invalid arg is detected
     global argument_error
     invalid_args_list = []
     anaglyph = False
@@ -174,7 +174,11 @@ def distort_image(fname, args):
         # no '-colorspace RGB'
         build_str += " -define jpeg:dct-method=float -strip -interlace Plane -sampling-factor 4:2:0 -quality 80% "
     if any("l" in (v := value) for value in args):  # if l-flag is in args
-        cast_int = int(v[1:4])
+        try:
+            cast_int = int(v[1:4])
+        except Exception as e:
+            arg_error_flag = True
+            cast_int = 43 # this will be interpolated to the deafult of l = 60
         if cast_int >= 1 and cast_int <= 100:
             l = round(interp(cast_int, [1, 100], [99, 8]))
             build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
@@ -195,7 +199,11 @@ def distort_image(fname, args):
         #         l = 0
             continue
         if e.startswith('n'):  # noise-flag
-            cast_int = int(e[1:4])
+            try:
+                cast_int = int(e[1:4])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= 1 and cast_int <= 100:
                 if cast_int <= 25:
                     cast_float = round(interp(cast_int, [1, 25], [0.1, 1.0]),2)
@@ -214,34 +222,58 @@ def distort_image(fname, args):
                     build_str += f" +noise Gaussian +noise Gaussian +noise Gaussian +noise Gaussian -attenuate {cast_float} "
             continue
         if e.startswith('b'):  # blur-flag
-            cast_int = int(e[1:4])
+            try:
+                cast_int = int(e[1:4])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= 1 and cast_int <= 100:
                 build_str += f" -blur 0x{cast_int} "
             continue
         if e.startswith('c'):  # contrast-flag
-            cast_int = int(e[1:5])
+            try:
+                cast_int = int(e[1:5])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= -100 and cast_int <= 100:
                 build_str += f" -brightness-contrast 0x{cast_int} "
             continue
         if e.startswith('s'):  # swirl-flag
-            cast_int = int(e[1:5])
+            try:
+                cast_int = int(e[1:5])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= -360 and cast_int <= 360:
                 build_str += f" -swirl {cast_int} "
             continue
         if e.startswith('o'):  # implode-flag
-            cast_int = int(e[1:4])
+            try:
+                cast_int = int(e[1:4])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= 1 and cast_int <= 100:
                 cast_float = float(cast_int)/100
                 build_str += f" -implode {cast_float} "
             continue
         if e.startswith('w'):  # wave-flag
-            cast_int = int(e[1:4])
+            try:
+                cast_int = int(e[1:4])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= 1 and cast_int <= 100:
                 #cast_float = float(cast_int)/100
                 build_str += f" -wave {round(0.7*cast_int)}x{2*cast_int} " # TODO fix image having spikes
             continue
         if e.startswith('d'):  # shepards-distortion-flag
-            cast_int = int(e[1:4])
+            try:
+                cast_int = int(e[1:4])
+            except Exception as e:
+                arg_error_flag = True
+                continue
             if cast_int >= 1 and cast_int <= 100:
                 # map float to meaningful power range
                 cast_float = "{:.1f}".format(
@@ -581,6 +613,8 @@ async def check_mentions(api, s_id):
                     r_tw_entities = r_tweet.extended_entities
                 else:
                     r_tw_entities = r_tweet.entities
+                if hasattr(r_tweet, 'possibly_sensitive'):
+                    sensitive = (r_tweet.possibly_sensitive or sensitive)
                 if 'media' in r_tw_entities: # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix
                     raw_image = r_tw_entities.get('media', [])
                     if(len(raw_image) > 0):
