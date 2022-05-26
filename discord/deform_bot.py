@@ -84,6 +84,7 @@ load_dotenv()
 
 # Turn on if you want to disable the bot on twitter
 DISABLE_TWITTER = os.getenv('DISABLE_TWITTER')
+DISABLE_TWITTER = DISABLE_TWITTER.lower() in ['true', 'True', '1', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 CONSUMER_KEY = os.getenv('TWITTER_OAUTH_CONSUMER_KEY')
