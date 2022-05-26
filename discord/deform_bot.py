@@ -65,7 +65,6 @@ import math
 import gc
 import tweepy
 from numpy import interp
-from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import discord
 from discord.ext import commands, tasks
@@ -98,6 +97,7 @@ since_id = int(os.getenv('last_id'))
 #the bot's command prefix for discord
 COMMAND_PREFIX = ['§','$']
 
+MAX_ARGS = 16 # maximum number of arguments the bot accepts
 lock = asyncio.Lock()  # Doesn't require event loop
 tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
@@ -156,19 +156,20 @@ def fetch_image(message):
 # defaults values if flag is not set or otherwise specified
 # note that the default input for 'l' is 43 but it's interpolated to l=60
 # TODO better blur!
-# TODO fix int cast failing when wrong arg is input
+# TODO rotatation arg (r)
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag # True if invalid arg is detected
     global argument_error
     invalid_args_list = []
+    arg_count = 0
     anaglyph = False
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
 
     # build the command string
-    build_str = """ -background "#36393e" """
-    l = 60 # lower this numer = more distortion 
+    build_str = """ -background "#36393e" """ # this is the discord bg color
+    l = 60 # lower this numer => more distortion 
 
     if ("u" not in args):  # disable-compression flag
         # no '-colorspace RGB'
@@ -188,6 +189,12 @@ def distort_image(fname, args):
         build_str += f" -liquid-rescale {l}x{l}%! -resize {imgdimens[0]}x{imgdimens[1]}\! "
 
     for e in args:
+        arg_count += 1 # why the fuck doesn't '++' exist in python
+        if arg_count > MAX_ARGS:
+            arg_error_flag = True
+            invalid_args_list.append(e)
+            argument_error.description = "Invalid argument(s): " + str(invalid_args_list) + ".\nFor argument usage refer to `§help`"
+            break
         # note: with heavy noise sc has to run before the image is noisified or it will fail!!
         # ! sc is now applied above !
         if e.startswith('l'):  # sc-factor-flag
@@ -577,6 +584,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 
 async def check_mentions(api, s_id):
     """check mentions in v1.1 api"""
+    global arg_error_flag
     # Retrieving mentions
     new_since_id = s_id
     twitter_media_url = ""
@@ -615,7 +623,7 @@ async def check_mentions(api, s_id):
                     r_tw_entities = r_tweet.entities
                 if hasattr(r_tweet, 'possibly_sensitive'):
                     sensitive = (r_tweet.possibly_sensitive or sensitive)
-                if 'media' in r_tw_entities: # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix
+                if 'media' in r_tw_entities: # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix but not tested
                     raw_image = r_tw_entities.get('media', [])
                     if(len(raw_image) > 0):
                         twitter_media_url = raw_image[0]['media_url']
@@ -628,6 +636,8 @@ async def check_mentions(api, s_id):
                 continue
 
         async with lock: # from here proceed with lock!
+            # clear arg error flag
+            arg_error_flag = False
             # first delete the existing files
             for delf in os.listdir("raw"):
                 if delf.endswith(".jpg"):
