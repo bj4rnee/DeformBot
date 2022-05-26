@@ -308,6 +308,15 @@ def distort_image(fname, args):
                     build_str += f"{points[-2][0]},{points.pop(-2)[1]},{points[-1][0]},{points.pop(-1)[1]} "
                 build_str += "' "
             continue
+        if e.startswith('r'):  # rotate-flag
+            try:
+                cast_int = int(e[1:5])
+            except Exception as e:
+                arg_error_flag = True
+                continue
+            if cast_int >= -360 and cast_int <= 360:
+                build_str += f" -rotate {cast_int} "
+            continue
         if e.startswith('a'):  # stereo-flag (aka anaglyph)
             # -stereo doesnt really work in a single command, therefore anaglyph is always applied last. this is a bug.
             #build_str += f" -convert {fname} {fname} -composite -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} "

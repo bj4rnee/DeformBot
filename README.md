@@ -44,6 +44,7 @@ Arguments for the `§d` command can be used as follows:\
 | o      | implode                   | int        | [0; 100]     |
 | d      | shepard's distortion (IWD)| int        | [0; 100]     |
 | w      | wave                      | int        | [0; 100]     |
+| r      | rotate                    | int        | [-360; +360] |
 | a      | anaglyph (cyan-red 3D)    | bool       |              |
 | i      | invert colors             | bool       |              |
 | g      | grayscale colors          | bool       |              |
