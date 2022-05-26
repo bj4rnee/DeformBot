@@ -156,7 +156,6 @@ def fetch_image(message):
 # defaults values if flag is not set or otherwise specified
 # note that the default input for 'l' is 43 but it's interpolated to l=60
 # TODO better blur!
-# TODO rotatation arg (r)
 def distort_image(fname, args):
     """function to distort an image using the magick library"""
     global arg_error_flag # True if invalid arg is detected
@@ -638,10 +637,12 @@ async def check_mentions(api, s_id):
                         twitter_media_url = raw_image[0]['media_url']
                     else:
                         twitter_media_url = "[ERROR] No url found"
-                else: # TODO fix bot responding with error to tweets not trying to send a command
-                    api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                else: # TODO fix bot responding with error to tweets not trying to send a command -> attempted fix but not tested
+                    if not (r_tweet.in_reply_to_user_id_str == "DeformBot"): # dont reply with error to our own tweets
+                        api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
             else:
+                api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                 continue
 
         async with lock: # from here proceed with lock!
