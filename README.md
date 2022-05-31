@@ -76,5 +76,8 @@ To use command arguments simply append them after the mention.\
 # What's Next
 GIF support [beta]
 
+# Known Bugs
+`§d i s60` causes a big black circle to appear.
+
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea
