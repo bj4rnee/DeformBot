@@ -52,6 +52,7 @@
 #             Written by Bjarne <klar@bjarne.dev>, May 2022
 
 import os
+import sys
 import random
 import time
 from urllib import request
@@ -64,6 +65,7 @@ import traceback
 import math
 import gc
 import tweepy
+import logging
 from numpy import interp
 from datetime import datetime, timedelta
 import discord
@@ -99,12 +101,31 @@ since_id = int(os.getenv('last_id'))
 COMMAND_PREFIX = ['§','$']
 
 MAX_ARGS = 16 # maximum number of arguments the bot accepts
+OUTPUT_PATH = os.path.join("/home", "db_outputs")
 lock = asyncio.Lock()  # Doesn't require event loop
 tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
 
+# this is a hack to log print to a file but keep stdout
+log_path = os.path.join("/home", "db_outputs", "db.log")
+if os.path.exists(OUTPUT_PATH):
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(log_path, "a"),
+    ],)
+else:
+    print("[Error] Couldn't find logfile. Creating a new one in current dir ...")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("db.log", "a"),
+    ],)
+logger = logging.getLogger()
+logger.propagate = False
+print = logger.info
 
 # UNFORTUNATELY THIS WORKS ONLY IN v1.1 API
 # Authenticate to Twitter
@@ -361,7 +382,7 @@ def distort_image(fname, args):
     image.close()
 
     # backup file to /db_outputs
-    bkp_path = os.path.join("/home", "db_outputs")
+    bkp_path = OUTPUT_PATH
     if os.path.exists(bkp_path):
         if DEBUG:
             print("[DEBUG]: free backup space: " +
@@ -600,102 +621,105 @@ async def check_mentions(api, s_id):
     # Retrieving mentions
     new_since_id = s_id
     twitter_media_url = ""
-    for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
-        new_since_id = max(tweet.id, new_since_id)
-        #os.environ['last_id'] = str(new_since_id)
-        set_key(".env", 'last_id', str(new_since_id)) # only works when process is terminated
-        if hasattr(tweet, 'text'):
-            tweet_txt = tweet.text.lower()
-        else:
-            tweet_txt = tweet.full_text.lower()
-        if hasattr(tweet, 'possibly_sensitive'):
-            sensitive = tweet.possibly_sensitive
-        else:
-            sensitive = False
-        reply_og_id  = tweet.in_reply_to_status_id # original status (if 'tweet' is a reply)
-        if DEBUG:
-            print("[DEBUG] tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', sensitive: " + str(sensitive) + ", reply: " + str(reply_og_id))
-        
-        if hasattr(tweet, 'extended_entities'):
-            tw_entities = tweet.extended_entities
-        else:
-            tw_entities = tweet.entities
-        if 'media' in tw_entities: # tweet that mentionions db contains image
-            raw_image = tw_entities.get('media', [])
-            if(len(raw_image) > 0):
-                twitter_media_url = raw_image[0]['media_url']
+    try:
+        for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
+            new_since_id = max(tweet.id, new_since_id)
+            #os.environ['last_id'] = str(new_since_id)
+            set_key(".env", 'last_id', str(new_since_id)) # only works when process is terminated
+            if hasattr(tweet, 'text'):
+                tweet_txt = tweet.text.lower()
             else:
-                twitter_media_url = "[ERROR] No url found"
-        else: # tweet that the mentioner replies to contains image
-            if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
-                r_tweet = api.get_status(reply_og_id, tweet_mode='extended')
-                if hasattr(r_tweet, 'extended_entities'):
-                    r_tw_entities = r_tweet.extended_entities
+                tweet_txt = tweet.full_text.lower()
+            if hasattr(tweet, 'possibly_sensitive'):
+                sensitive = tweet.possibly_sensitive
+            else:
+                sensitive = False
+            reply_og_id  = tweet.in_reply_to_status_id # original status (if 'tweet' is a reply)
+            if DEBUG:
+                print("[DEBUG] tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', sensitive: " + str(sensitive) + ", reply: " + str(reply_og_id))
+            
+            if hasattr(tweet, 'extended_entities'):
+                tw_entities = tweet.extended_entities
+            else:
+                tw_entities = tweet.entities
+            if 'media' in tw_entities: # tweet that mentionions db contains image
+                raw_image = tw_entities.get('media', [])
+                if(len(raw_image) > 0):
+                    twitter_media_url = raw_image[0]['media_url']
                 else:
-                    r_tw_entities = r_tweet.entities
-                if hasattr(r_tweet, 'possibly_sensitive'):
-                    sensitive = (r_tweet.possibly_sensitive or sensitive)
-                if 'media' in r_tw_entities: # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix but not tested
-                    raw_image = r_tw_entities.get('media', [])
-                    if(len(raw_image) > 0):
-                        twitter_media_url = raw_image[0]['media_url']
+                    twitter_media_url = "[ERROR] No url found"
+            else: # tweet that the mentioner replies to contains image
+                if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
+                    r_tweet = api.get_status(reply_og_id, tweet_mode='extended')
+                    if hasattr(r_tweet, 'extended_entities'):
+                        r_tw_entities = r_tweet.extended_entities
                     else:
-                        twitter_media_url = "[ERROR] No url found"
-                else: # TODO fix bot responding with error to tweets not trying to send a command -> attempted fix but not tested
-                    if not (r_tweet.in_reply_to_user_id_str == "DeformBot"): # dont reply with error to our own tweets
-                        api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
-                    continue
-            else:
-                api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
-                continue
-
-        async with lock: # from here proceed with lock!
-            # clear arg error flag
-            arg_error_flag = False
-            # first delete the existing files
-            for delf in os.listdir("raw"):
-                if delf.endswith(".jpg"):
-                    os.remove(os.path.join("raw", delf))
-            for delf2 in os.listdir("results"):
-                if delf2.endswith(".jpg"):
-                    os.remove(os.path.join("results", delf2))
-
-            # fetch and process the image
-            if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
-                if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold() or twitter_media_url[-4:].casefold() == ".gif".casefold():
-                    r = requests.get(twitter_media_url, stream=True)
-                    image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
-
-                    with open(os.path.join("raw", image_name), 'wb') as out_file:
-                        if DEBUG:
-                            print("───────────" + image_name + "───────────")
-                            print("saving image: " + image_name)
-                        shutil.copyfileobj(r.raw, out_file)
-                        out_file.flush()
-                        args = tuple([x for x in tweet_txt.split() if all(y not in x for y in '@.')]) # remove mention and links from args. Alternatively '/' can be used instead of '.'
-                        # distort the file
-                        distort_image(image_name, args)
-
-                        if arg_error_flag:
-                            pass # we're not sending massive amounts of error msgs to twitter
-
-                        if DEBUG:
-                            print("distorted image: " + image_name)
-                            print(
-                                "──────────────────────────────────────────────────────────────")
-                        # send distorted image
-                        result_img = api.media_upload(os.path.join("results", image_name)) # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
-                        if DEBUG:
-                            api.update_status(status="[DEBUG] Processed image: " + image_name + "\nargs=" + str(args), in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
-                            continue
-                        api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                        r_tw_entities = r_tweet.entities
+                    if hasattr(r_tweet, 'possibly_sensitive'):
+                        sensitive = (r_tweet.possibly_sensitive or sensitive)
+                    if 'media' in r_tw_entities: # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix but not tested
+                        raw_image = r_tw_entities.get('media', [])
+                        if(len(raw_image) > 0):
+                            twitter_media_url = raw_image[0]['media_url']
+                        else:
+                            twitter_media_url = "[ERROR] No url found"
+                    else: # TODO fix bot responding with error to tweets not trying to send a command -> attempted fix but not tested
+                        if not (r_tweet.in_reply_to_user_id_str == "DeformBot"): # dont reply with error to our own tweets
+                            api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                         continue
                 else:
-                    api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg' and '.png' are supported at the moment.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                    api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
 
-#api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
+            async with lock: # from here proceed with lock!
+                # clear arg error flag
+                arg_error_flag = False
+                # first delete the existing files
+                for delf in os.listdir("raw"):
+                    if delf.endswith(".jpg"):
+                        os.remove(os.path.join("raw", delf))
+                for delf2 in os.listdir("results"):
+                    if delf2.endswith(".jpg"):
+                        os.remove(os.path.join("results", delf2))
 
+                # fetch and process the image
+                if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
+                    if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold() or twitter_media_url[-4:].casefold() == ".gif".casefold():
+                        r = requests.get(twitter_media_url, stream=True)
+                        image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
+
+                        with open(os.path.join("raw", image_name), 'wb') as out_file:
+                            if DEBUG:
+                                print("───────────" + image_name + "───────────")
+                                print("saving image: " + image_name)
+                            shutil.copyfileobj(r.raw, out_file)
+                            out_file.flush()
+                            args = tuple([x for x in tweet_txt.split() if all(y not in x for y in '@.')]) # remove mention and links from args. Alternatively '/' can be used instead of '.'
+                            # distort the file
+                            distort_image(image_name, args)
+
+                            if arg_error_flag:
+                                pass # we're not sending massive amounts of error msgs to twitter
+
+                            if DEBUG:
+                                print("distorted image: " + image_name)
+                                print(
+                                    "──────────────────────────────────────────────────────────────")
+                            # send distorted image
+                            result_img = api.media_upload(os.path.join("results", image_name)) # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
+                            if DEBUG:
+                                api.update_status(status="[DEBUG] Processed image: " + image_name + "\nargs=" + str(args), in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                                continue
+                            api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                            continue
+                    else:
+                        api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg' and '.png' are supported at the moment.", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                        continue
+    except (tweepy.TweepyException, tweepy.HTTPException) as e:
+        print("[Error] TweepyException: "+ str(e))
+
+#api.update_status('@' + tweet.user.screen_name + " Here you go:", tweet.id, media_ids=[result_img.media_id])
+    
     return new_since_id
 
 
