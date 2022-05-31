@@ -77,7 +77,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.6_dev"
+VERSION = "1.3.7_dev"
 # Turn off in production!
 DEBUG = True
 
