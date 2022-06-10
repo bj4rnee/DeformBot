@@ -722,7 +722,8 @@ async def check_mentions(api, s_id):
                             distort_image(image_name, args)
 
                             if arg_error_flag:
-                                pass  # we're not sending massive amounts of error msgs to twitter
+                                arg_error_flag = False
+                                print("[Twitter] argument error flag was true")  # we're not sending massive amounts of error msgs to twitter
 
                             if DEBUG:
                                 print("distorted image: " + image_name)
