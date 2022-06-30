@@ -283,11 +283,11 @@ def distort_image(fname, args):
             continue
         if e.startswith('o'):  # implode-flag
             try:
-                cast_int = int(e[1:4])
+                cast_int = int(e[1:5])
             except Exception as e:
                 arg_error_flag = True
                 continue
-            if cast_int >= 1 and cast_int <= 100:
+            if cast_int >= -100 and cast_int <= 100:
                 cast_float = float(cast_int)/100
                 build_str += f" -implode {cast_float} "
             continue
@@ -399,14 +399,20 @@ def distort_image(fname, args):
                   str(psutil.disk_usage(bkp_path).free) + "B")
         if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
             try:
-                shutil.copy(f"results/{fname}", bkp_path)
+                bkp_name = fname
+                # check if name collides (extremely unlikely but possible)
+                while (os.path.exists(os.path.join(bkp_path, bkp_name))):
+                    if DEBUG:
+                        print("[ERROR]: filename collision detected: " + bkp_name)
+                    bkp_name = str(uuid.uuid4()) + '.jpg' # generate new fname
+                shutil.copy(f"results/{fname}", os.path.join(bkp_path, bkp_name))
                 if DEBUG:
-                    print(f"stored image: {fname}")
+                    print(f"stored image: {bkp_name}")
             except:
                 traceback.print_exc()
         else:
             print(
-                "IOError: couldn't save the output file to db_outputs. Maybe check disk...?")
+                "[IOError] couldn't save the output file to db_outputs. Maybe check disk...?")
     buf.seek(0)
     buf.close
     return discord.File(os.path.join("results", f"{fname}"))

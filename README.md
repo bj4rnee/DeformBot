@@ -41,7 +41,7 @@ Arguments for the `§d` command can be used as follows:\
 | n      | noise                     | int        | [0; 100]     |
 | b      | blur                      | int        | [0; 100]     |
 | c      | contrast                  | int        | [-100; 100]  |
-| o      | implode                   | int        | [0; 100]     |
+| o      | implode                   | int        | [-100; 100]  |
 | d      | shepard's distortion (IWD)| int        | [0; 100]     |
 | w      | wave                      | int        | [0; 100]     |
 | r      | rotate (clockwise)        | int        | [-360; +360] |
