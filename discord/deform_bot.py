@@ -144,7 +144,7 @@ embed_nofile_error.set_author(name="[Error]", url="https://bjarne.dev/",
                               icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
 embed_wrongfile_error = discord.Embed(
-    description="Can't process this filetype. Only `.jpg`, `.jpeg` and `.png` are supported at the moment", color=0xFF5555)
+    description="Can't process this filetype. Only `.jpg`, `.jpeg`, `.png` and `.gif` are supported at the moment", color=0xFF5555)
 embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
                                  icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
