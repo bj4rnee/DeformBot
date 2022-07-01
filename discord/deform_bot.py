@@ -638,6 +638,9 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                             if DEBUG:
                                 await ch.send(embed=embed_wrongfile_error)
                             return
+                    else:
+                        await ch.send(embed=embed_unsafeurl_error)
+                        return
         else:
             return
 
@@ -759,6 +762,11 @@ async def check_mentions(api, s_id):
                         api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg' and '.png' are supported at the moment.",
                                           in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                         continue
+                else:
+                    # unsafe url
+                    api.update_status(status="[ERROR] Unsafe url detected. Only images hosted on Twitter are supported at the moment.",
+                                          in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                    continue
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
 
