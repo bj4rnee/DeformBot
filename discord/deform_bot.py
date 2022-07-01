@@ -153,6 +153,11 @@ argument_error = discord.Embed(
 argument_error.set_author(name="[Error]", url="https://github.com/bj4rnee/DeformBot#command-arguments",
                           icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
+embed_unsafeurl_error = discord.Embed(
+    description="Unsafe url detected. Only images hosted on `cdn.discordapp.com` are supported at the moment", color=0xFF5555)
+embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
+                                 icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
+
 
 # Semaphore methods
 async def wait():  # aquire the lock
@@ -565,6 +570,10 @@ async def deform(ctx, *args):
                 else:
                     await ctx.send(embed=embed_wrongfile_error)
                     return
+            else:
+                # handle non-discord url
+                await ctx.send(embed=embed_unsafeurl_error)
+                return
 
 
 @bot.event
