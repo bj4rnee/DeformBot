@@ -668,7 +668,7 @@ async def check_mentions(api, s_id):
             set_key(".env", 'last_id', str(new_since_id))
 
             #increment number of interactions from this user
-            user_json[tweet.user.screen_name] = (int(d[tweet.user.screen_name])+1) if (tweet.user.screen_name in d) else 1
+            user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
             # if user sent too many requests in the past minutes, db ignores
             if int(user_json[tweet.user.screen_name]) >= 3:
