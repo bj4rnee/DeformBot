@@ -66,6 +66,7 @@ import math
 import gc
 import tweepy
 import logging
+import json
 from numpy import interp
 from datetime import datetime, timedelta
 import discord
@@ -77,7 +78,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.8_dev"
+VERSION = "1.3.9_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -96,6 +97,15 @@ ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN_MANAGE')
 USER_ID = os.getenv('DB_USER_ID')
 since_id = int(os.getenv('last_id'))
+user_json = {}
+
+# load info about twitter users interacting with bot
+# this is a fix for feedback loops with e.g. other image bots
+try:
+    with open('user_interact.json') as f:
+        user_json = json.load(f)
+except Exception as e:
+    print("[Error] Couldn't read 'user_interact.json': " + str(e))
 
 # the bot's command prefix for discord
 COMMAND_PREFIX = ['§', '$']
@@ -172,10 +182,6 @@ async def wait():  # aquire the lock
 async def signal():  # free the lock
     bot.mutex = True
     return bot.mutex
-
-
-def fetch_image(message):
-    return
 
 
 # args: seam-carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
@@ -442,6 +448,8 @@ async def on_ready():
     if not DISABLE_TWITTER:
         if not twitter_bot_loop.is_running():
             twitter_bot_loop.start()
+        if not decr_interactions_loop.is_running():
+            decr_interactions_loop.start()
         #print("[IMPORTANT] You shouldn't be seeing this message!")
     else:
         print("[Twitter] @DefomBot disabled.")
@@ -648,6 +656,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 async def check_mentions(api, s_id):
     """check mentions in v1.1 api"""
     global arg_error_flag
+    global user_json
     # Retrieving mentions
     new_since_id = s_id
     twitter_media_url = ""
@@ -657,6 +666,16 @@ async def check_mentions(api, s_id):
             #os.environ['last_id'] = str(new_since_id)
             # only works when process is terminated
             set_key(".env", 'last_id', str(new_since_id))
+
+            #increment number of interactions from this user
+            user_json[tweet.user.screen_name] = (int(d[tweet.user.screen_name])+1) if (tweet.user.screen_name in d) else 1
+
+            # if user sent too many requests in the past minutes, db ignores
+            if int(user_json[tweet.user.screen_name]) >= 3:
+                if DEBUG:
+                    print("[ERROR] overflowing tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+                continue
+
             if hasattr(tweet, 'text'):
                 tweet_txt = tweet.text.lower()
             else:
@@ -759,7 +778,7 @@ async def check_mentions(api, s_id):
                                               possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                             continue
                     else:
-                        api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg' and '.png' are supported at the moment.",
+                        api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg', '.png' and '.gif' are supported at the moment.",
                                           in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                         continue
                 else:
@@ -776,10 +795,27 @@ async def check_mentions(api, s_id):
 
 
 # THIS IS THE LOOP FOR THE TWITTER BOT
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=75)
 async def twitter_bot_loop():
     global since_id
-    # execute this every minute
+    global user_json
+    # execute this every 75 seconds
     since_id = await check_mentions(api, since_id)
+    # then dump updated user json to file
+    try:
+        with open('user_interact.json', 'w') as f:
+            json.dump(user_json, f)
+    except Exception as e:
+        print("[Error] Couldn't write 'user_interact.json': " + str(e))
+
+
+@tasks.loop(seconds=600)
+async def decr_interactions_loop():
+    global user_json
+    for u in user_json:
+        user_json[u] = (int(user_json[u])-1) if (int(user_json[u])>0) else 0
+        # remove user from dict if he has no more activity
+        #if int(user_json[u]==0):
+        #    user_json.pop(u, None)
 
 bot.run(TOKEN)
