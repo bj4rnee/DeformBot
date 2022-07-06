@@ -75,8 +75,8 @@ To use command arguments simply append them after the mention.\
 
 # What's Next
 - GIF support [beta]
-- trigger typing indicator
-- search for last image on command if nothing else is found
+- trigger typing indicator [beta]
+- search for last image on command if nothing else is found [beta]
 
 # Known Bugs
 `§d i s60` causes a big black circle to appear.

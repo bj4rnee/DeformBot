@@ -78,7 +78,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.3.9_dev"
+VERSION = "1.4.0_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -515,38 +515,56 @@ async def help(ctx):
 async def deform(ctx, *args):
     global arg_error_flag
     async with lock:
-        # set error flag to false
-        arg_error_flag = False
-        # first delete the existing files
-        for delf in os.listdir("raw"):
-            if delf.endswith(".jpg"):
-                os.remove(os.path.join("raw", delf))
-
-        for delf2 in os.listdir("results"):
-            if delf2.endswith(".jpg"):
-                os.remove(os.path.join("results", delf2))
-
         msg = ctx.message  # msg with command in it
         reply_msg = None  # original msg which was replied to with command
         ch = msg.channel
+        url = ""
+        async with ch.typing():
+            # set error flag to false
+            arg_error_flag = False
+            # first delete the existing files
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
 
-        if msg.reference != None:  # if msg is a reply
-            reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
-            msg = reply_msg
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
 
-        try:
-            if len(msg.embeds) <= 0:  # no embeds
-                url = msg.attachments[0].url
-            else:
-                url = msg.embeds[0].image.url
-                if isinstance(url, str) == False:
-                    await ctx.send(embed=embed_nofile_error)
-                    return
-        except (IndexError, TypeError):
-            #mlsg.channel
-            await ctx.send(embed=embed_nofile_error)
-            return
-        else:
+            if msg.reference != None:  # if msg is a reply
+                reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
+                msg = reply_msg
+
+            try:
+                if len(msg.embeds) <= 0:  # no embeds
+                    url = msg.attachments[0].url
+                else:
+                    url = msg.embeds[0].image.url
+                    if isinstance(url, str) == False:
+                        await ctx.send(embed=embed_nofile_error)
+                        return
+            except (IndexError, TypeError):
+                older_msgs = await ch.history(limit=10).flatten()
+                # check if an older msg contains image
+                for omsg in older_msgs:
+                    try:
+                        if len(omsg.embeds) <= 0:  # no embeds
+                            url = omsg.attachments[0].url
+                            break
+                        else:
+                            url = omsg.embeds[0].image.url
+                            if isinstance(url, str) == False: # this might be a problem: if the first embed db sees has a faulty url, it returns error
+                                await ctx.send(embed=embed_nofile_error)
+                                return
+                            break
+                    except (IndexError, TypeError):
+                        if omsg == older_msgs[-1]:
+                            await ctx.send(embed=embed_nofile_error)
+                            return
+                        else:
+                            continue
+                # we land here on success
+
             if url[0:26] == "https://cdn.discordapp.com":
                 if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                     r = requests.get(url, stream=True)
@@ -590,66 +608,67 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
     if user != bot.user:
         if str(reaction.emoji) == "🤖":
             async with lock:
-                # first delete the existing files
-                for delf in os.listdir("raw"):
-                    if delf.endswith(".jpg"):
-                        os.remove(os.path.join("raw", delf))
-
-                for delf2 in os.listdir("results"):
-                    if delf2.endswith(".jpg"):
-                        os.remove(os.path.join("results", delf2))
-
-                # fetch and process the image
                 msg = reaction.message
                 ch = msg.channel
 
-                try:
-                    if len(msg.embeds) <= 0:  # no embeds
-                        url = msg.attachments[0].url
-                    else:
-                        url = msg.embeds[0].image.url
-                        if isinstance(url, str) == False:
+                async with ch.typing(): #trigger typing indicator
+                    # first delete the existing files
+                    for delf in os.listdir("raw"):
+                        if delf.endswith(".jpg"):
+                            os.remove(os.path.join("raw", delf))
+
+                    for delf2 in os.listdir("results"):
+                        if delf2.endswith(".jpg"):
+                            os.remove(os.path.join("results", delf2))
+
+                    # fetch and process the image
+                    try:
+                        if len(msg.embeds) <= 0:  # no embeds
+                            url = msg.attachments[0].url
+                        else:
+                            url = msg.embeds[0].image.url
+                            if isinstance(url, str) == False:
+                                await ch.send(embed=embed_nofile_error)
+                                return
+                    except (IndexError, TypeError):
+                        if DEBUG:  # don't send errors on reaction
                             await ch.send(embed=embed_nofile_error)
-                            return
-                except (IndexError, TypeError):
-                    if DEBUG:  # don't send errors on reaction
-                        await ch.send(embed=embed_nofile_error)
-                    return
-                else:
-                    if url[0:26] == "https://cdn.discordapp.com":
-                        if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
-                            r = requests.get(url, stream=True)
-                            image_name = str(uuid.uuid4()) + \
-                                '.jpg'  # generate uuid
+                        return
+                    else:
+                        if url[0:26] == "https://cdn.discordapp.com":
+                            if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
+                                r = requests.get(url, stream=True)
+                                image_name = str(uuid.uuid4()) + \
+                                    '.jpg'  # generate uuid
 
-                            with open(os.path.join("raw", image_name), 'wb') as out_file:
-                                if DEBUG:
-                                    print("───────────" +
-                                          image_name + "───────────")
-                                    print("saving image: " + image_name)
-                                shutil.copyfileobj(r.raw, out_file)
-                                out_file.flush()
+                                with open(os.path.join("raw", image_name), 'wb') as out_file:
+                                    if DEBUG:
+                                        print("───────────" +
+                                            image_name + "───────────")
+                                        print("saving image: " + image_name)
+                                    shutil.copyfileobj(r.raw, out_file)
+                                    out_file.flush()
 
-                                # unfortunately await can't be used here
-                                distorted_file = distort_image(image_name, ())
+                                    # unfortunately await can't be used here
+                                    distorted_file = distort_image(image_name, ())
 
-                                if DEBUG:
-                                    print("distorted image: " + image_name)
-                                    print(
-                                        "──────────────────────────────────────────────────────────────")
-                                # send distorted image
-                                if DEBUG:
-                                    await ch.send("[Debug] Processed image: " + image_name, file=distorted_file)
+                                    if DEBUG:
+                                        print("distorted image: " + image_name)
+                                        print(
+                                            "──────────────────────────────────────────────────────────────")
+                                    # send distorted image
+                                    if DEBUG:
+                                        await ch.send("[Debug] Processed image: " + image_name, file=distorted_file)
+                                        return
+                                    await ch.send(file=distorted_file)
                                     return
-                                await ch.send(file=distorted_file)
+                            else:
+                                if DEBUG:
+                                    await ch.send(embed=embed_wrongfile_error)
                                 return
                         else:
-                            if DEBUG:
-                                await ch.send(embed=embed_wrongfile_error)
+                            await ch.send(embed=embed_unsafeurl_error)
                             return
-                    else:
-                        await ch.send(embed=embed_unsafeurl_error)
-                        return
         else:
             return
 
