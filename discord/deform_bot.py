@@ -543,6 +543,7 @@ async def deform(ctx, *args):
                     await ctx.send(embed=embed_nofile_error)
                     return
         except (IndexError, TypeError):
+            #mlsg.channel
             await ctx.send(embed=embed_nofile_error)
             return
         else:
@@ -670,12 +671,6 @@ async def check_mentions(api, s_id):
             #increment number of interactions from this user
             user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
-            # if user sent too many requests in the past minutes, db ignores
-            if int(user_json[tweet.user.screen_name]) >= 3:
-                if DEBUG:
-                    print("[ERROR] overflowing tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', status_id: " + str(tweet.id))
-                continue
-
             if hasattr(tweet, 'text'):
                 tweet_txt = tweet.text.lower()
             else:
@@ -684,6 +679,13 @@ async def check_mentions(api, s_id):
                 sensitive = tweet.possibly_sensitive
             else:
                 sensitive = False
+
+            # if user sent too many requests in the past minutes, db ignores
+            if int(user_json[tweet.user.screen_name]) >= 4:
+                if DEBUG:
+                    print("[ERROR] overflowing tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+                continue
+
             # original status (if 'tweet' is a reply)
             reply_og_id = tweet.in_reply_to_status_id
             if DEBUG:
@@ -772,9 +774,9 @@ async def check_mentions(api, s_id):
                                 os.path.join("results", image_name))
                             if DEBUG:
                                 api.update_status(status="[DEBUG] Processed image: " + image_name + "\nargs=" + str(
-                                    args), in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                                    args) + "\n#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                                 continue
-                            api.update_status(status=" ", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
+                            api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
                                               possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                             continue
                     else:
@@ -809,7 +811,7 @@ async def twitter_bot_loop():
         print("[Error] Couldn't write 'user_interact.json': " + str(e))
 
 
-@tasks.loop(seconds=600)
+@tasks.loop(seconds=480)
 async def decr_interactions_loop():
     global user_json
     for u in user_json:

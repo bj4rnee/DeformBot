@@ -74,7 +74,9 @@ To use command arguments simply append them after the mention.\
 [Here](https://github.com/bj4rnee/DeformBot/blob/main/misc/PRIVACY.md) you can check out DeformBot's privacy policy.
 
 # What's Next
-GIF support [beta]
+- GIF support [beta]
+- trigger typing indicator
+- search for last image on command if nothing else is found
 
 # Known Bugs
 `§d i s60` causes a big black circle to appear.
