@@ -830,7 +830,7 @@ async def twitter_bot_loop():
         print("[Error] Couldn't write 'user_interact.json': " + str(e))
 
 
-@tasks.loop(seconds=480)
+@tasks.loop(seconds=250)
 async def decr_interactions_loop():
     global user_json
     for u in user_json:
