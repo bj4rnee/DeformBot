@@ -98,6 +98,7 @@ BEARER_TOKEN = os.getenv('BEARER_TOKEN_MANAGE')
 USER_ID = os.getenv('DB_USER_ID')
 since_id = int(os.getenv('last_id'))
 user_json = {}
+tweet_json = [] # keep in mind this is a list and not a dict
 
 # load info about twitter users interacting with bot
 # this is a fix for feedback loops with e.g. other image bots
@@ -106,6 +107,14 @@ try:
         user_json = json.load(f)
 except Exception as e:
     print("[Error] Couldn't read 'user_interact.json': " + str(e))
+
+# load overflowing tweet json list
+try:
+    with open('tweet_overflow.json') as f2:
+        tweet_json = json.load(f2)
+except Exception as e:
+    print("[Error] Couldn't read 'tweet_overflow.json': " + str(e))
+
 
 # the bot's command prefix for discord
 COMMAND_PREFIX = ['§', '$']
@@ -674,14 +683,24 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 
 
 async def check_mentions(api, s_id):
-    """check mentions in v1.1 api"""
+    """checks and processes mentions in v1.1 api"""
     global arg_error_flag
     global user_json
+
     # Retrieving mentions
     new_since_id = s_id
     twitter_media_url = ""
+    mentions = []
+
+    for twObj in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
+        mentions.append(twObj)
+    
+    for twJson in tweet_json:
+        mentions.append(api.get_status(twJson, tweet_mode='extended'))
+        #tweet_json.remove(twJson)
+
     try:
-        for tweet in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
+        for tweet in mentions:
             new_since_id = max(tweet.id, new_since_id)
             #os.environ['last_id'] = str(new_since_id)
             # only works when process is terminated
@@ -701,9 +720,15 @@ async def check_mentions(api, s_id):
 
             # if user sent too many requests in the past minutes, db ignores
             if int(user_json[tweet.user.screen_name]) >= 4:
-                if DEBUG:
-                    print("[ERROR] overflowing tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+                # add tweet to overflow dict
+                if tweet.id not in tweet_json:
+                    tweet_json.append(tweet.id)
+                    if DEBUG:
+                        print("[ERROR] overflowing tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', status_id: " + str(tweet.id))
                 continue
+            else: # request will be processed -> if tweet.id is in queued requests it can be removed
+                if tweet.id in tweet_json:
+                    tweet_json.remove(tweet.id)
 
             # original status (if 'tweet' is a reply)
             reply_og_id = tweet.in_reply_to_status_id
@@ -828,6 +853,13 @@ async def twitter_bot_loop():
             json.dump(user_json, f)
     except Exception as e:
         print("[Error] Couldn't write 'user_interact.json': " + str(e))
+
+    # and dump overflowing tweets to another file
+    try:
+        with open('tweet_overflow.json', 'w') as f2:
+            json.dump(tweet_json, f2)
+    except Exception as e:
+        print("[Error] Couldn't write 'tweet_overflow.json': " + str(e))
 
 
 @tasks.loop(seconds=250)
