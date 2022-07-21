@@ -696,8 +696,11 @@ async def check_mentions(api, s_id):
         mentions.append(twObj)
     
     for twJson in tweet_json:
-        mentions.append(api.get_status(twJson, tweet_mode='extended'))
-        #tweet_json.remove(twJson)
+        try:
+            mentions.append(api.get_status(twJson, tweet_mode='extended'))
+        except (tweepy.TweepyException, tweepy.HTTPException) as e:
+            print("[Error] TweepyException: " + str(e))
+            tweet_json.remove(twJson)
 
     try:
         for tweet in mentions:
