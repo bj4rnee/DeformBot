@@ -699,7 +699,7 @@ async def check_mentions(api, s_id):
         try:
             mentions.append(api.get_status(twJson, tweet_mode='extended'))
         except (tweepy.TweepyException, tweepy.HTTPException) as e:
-            print("[Error] TweepyException: " + str(e))
+            print("[Error] TweepyException: " + str(e) + ". StatusID: " + str(twJson))
             tweet_json.remove(twJson)
 
     try:
@@ -710,7 +710,8 @@ async def check_mentions(api, s_id):
             set_key(".env", 'last_id', str(new_since_id))
 
             #increment number of interactions from this user
-            user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
+            if tweet.id not in tweet_json: # only increment when tweet isn't overflowing
+                user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
             if hasattr(tweet, 'text'):
                 tweet_txt = tweet.text.lower()
