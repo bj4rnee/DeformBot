@@ -722,6 +722,9 @@ async def check_mentions(api, s_id):
             else:
                 sensitive = False
 
+            # convert tweet text to ascii: !!warning: §,ß(ss) are removed too
+            tweet_txt = tweet_txt.encode("ascii", errors="ignore").decode()
+
             # if user sent too many requests in the past minutes, db ignores
             if int(user_json[tweet.user.screen_name]) >= 4:
                 # add tweet to overflow dict
