@@ -79,7 +79,8 @@ To use command arguments simply append them after the mention.\
 - search for last image on command if nothing else is found [beta]
 
 # Known Bugs
-`§d i s60` causes a big black circle to appear.
+- `§d i s60` causes a big black circle to appear.
+- Discord Rich Presence is currently bugged
 
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea
