@@ -494,7 +494,7 @@ async def on_message(message):
 async def trigger(ctx):
     try:
         # test this function call
-        await check_followers()
+        await check_followers(api)
         pass
     except Exception as e:
         embed_stacktrace = discord.Embed(title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
@@ -870,7 +870,7 @@ async def check_mentions(api, s_id):
     return new_since_id
 
 
-async def check_followers(api, s_id):
+async def check_followers(api):
     try:
         followers = api.get_followers(user_id=1525511476391428096, count=5)
         print(followers)
