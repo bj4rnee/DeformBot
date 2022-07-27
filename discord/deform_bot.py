@@ -874,14 +874,27 @@ async def check_mentions(api, s_id):
 async def check_followers(api):
     try:
         followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
-        for follower in followers:
-            twitter_pp_url = follower.profile_image_url_https.replace("_normal.jpg", "_bigger.jpg")
-            r = requests.get(twitter_pp_url, stream=True)
-            image_name = str(follower.id) + '.jpg'
+        avatars = []
+        async with lock:
+            for follower in followers:
+                avatar_url = follower.profile_image_url_https.replace("_normal.jpg", "_bigger.jpg")
+                r = requests.get(avatar_url, stream=True)
+                image_name = str(follower.id) + '.jpg'
 
-            with open(os.path.join("raw", image_name), 'wb') as out_file:
-                shutil.copyfileobj(r.raw, out_file)
-                out_file.flush()
+                with open(os.path.join("raw", image_name), 'wb') as out_file:
+                    shutil.copyfileobj(r.raw, out_file)
+                    out_file.flush()
+                avatars.append(image_name)
+            # construct banner image
+            banner = Image.open("../misc/DeformBot_banner.png", 'r')
+            bn_w, bn_h = banner.size
+            offset = (374,350)
+            for avatar in avatars:
+                img = Image.open(os.path.join("raw", avatar), 'r')
+                banner.paste(img, offset)
+                img.close
+                offset = (offset[0]+100, offset[1])
+            banner.save(os.path.join("results", "banner.jpeg"), "JPEG")
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
     return
