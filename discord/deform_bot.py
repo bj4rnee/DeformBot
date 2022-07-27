@@ -879,7 +879,7 @@ async def check_mentions(api, s_id):
 async def check_followers(api, follower_list):
     try:
         followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
-        if sorted(followers) == sorted(follower_list):
+        if followers == follower_list:
             return followers # if latest followers didnt change, we can return
         avatars = []
         async with lock:
