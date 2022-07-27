@@ -875,7 +875,13 @@ async def check_followers(api):
     try:
         followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
         for follower in followers:
-            print(follower.profile_image_url_https)
+            twitter_pp_url = follower.profile_image_url_https.replace("_normal.jpg", "_bigger.jpg")
+            r = requests.get(twitter_pp_url, stream=True)
+            image_name = str(follower.id) + '.jpg'
+
+            with open(os.path.join("raw", image_name), 'wb') as out_file:
+                shutil.copyfileobj(r.raw, out_file)
+                out_file.flush()
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
     return
