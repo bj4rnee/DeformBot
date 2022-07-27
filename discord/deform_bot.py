@@ -877,6 +877,12 @@ async def check_mentions(api, s_id):
 
 
 async def check_followers(api, follower_list):
+    """checks and processes followers in v1.1 api
+    
+    Important
+    ------
+        this function is heavily rate-limited and can only be called once a minute!
+    """
     try:
         followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
         if followers == follower_list:
