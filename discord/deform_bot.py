@@ -307,9 +307,16 @@ def distort_image(fname, args):
             except Exception as e:
                 arg_error_flag = True
                 continue
-            if cast_int >= -100 and cast_int <= 100:
-                cast_float = float(cast_int)/100
+            # explode
+            if cast_int >= -100 and cast_int < 0:
+                cast_float = round(interp(cast_int, [-100, -1], [-1.15, -0.01]), 2)
                 build_str += f" -implode {cast_float} "
+                continue
+            # implode
+            else:
+                if cast_int > 0 and cast_int <= 100:
+                    cast_float = float(cast_int)/100
+                    build_str += f" -implode {cast_float} "
             continue
         if e.startswith('w'):  # wave-flag
             try:
