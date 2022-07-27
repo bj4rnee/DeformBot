@@ -494,7 +494,7 @@ async def on_message(message):
 async def trigger(ctx):
     try:
         # test this function call
-        await check_followers
+        await check_followers()
         pass
     except Exception as e:
         embed_stacktrace = discord.Embed(title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
