@@ -500,7 +500,7 @@ async def trigger(ctx):
         embed_stacktrace = discord.Embed(title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
         #embed_stacktrace.add_field(name='Traceback', value="Traceback")
         dfile = discord.File("../misc/this_is_fine.png", filename="this_is_fine.png")
-        embed_stacktrace.add_image(url="attachment://this_is_fine.png")
+        embed_stacktrace.set_image(url="attachment://this_is_fine.png")
         embed_stacktrace.description = traceback.format_exc()
         embed_stacktrace.timestamp = datetime.utcnow()
     await ctx.send(embed=embed_stacktrace, file=dfile)
