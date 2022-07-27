@@ -889,7 +889,7 @@ async def check_followers(api):
             # construct banner image
             banner = Image.open("../misc/DeformBot_banner.png", 'r')
             bn_w, bn_h = banner.size
-            offset = (374,350)
+            offset = (513,375)
 
             for avatar in avatars:
                 img = Image.open(os.path.join("raw", avatar), 'r')
