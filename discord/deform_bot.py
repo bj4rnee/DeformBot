@@ -873,8 +873,9 @@ async def check_mentions(api, s_id):
 
 async def check_followers(api):
     try:
-        followers = api.get_followers(user_id=1525511476391428096, count=2, skip_status=True)
-        print(followers)
+        followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
+        for follower in followers:
+            print(follower.profile_image_url_https)
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
     return
