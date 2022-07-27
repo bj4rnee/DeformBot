@@ -497,11 +497,13 @@ async def trigger(ctx):
         div_by_zero = 1/0
         pass
     except Exception as e:
-        embed_stacktrace = discord.Embed(title=':x: Event Error tested function', color=0xFF5555)
-        embed_stacktrace.add_field(name='Traceback', value="Traceback")
+        embed_stacktrace = discord.Embed(title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
+        #embed_stacktrace.add_field(name='Traceback', value="Traceback")
+        dfile = discord.File("../misc/this_is_fine.png", filename="this_is_fine.png")
+        embed_stacktrace.add_image(url="attachment://this_is_fine.png")
         embed_stacktrace.description = traceback.format_exc()
         embed_stacktrace.timestamp = datetime.utcnow()
-    await ctx.send(embed=embed_stacktrace)
+    await ctx.send(embed=embed_stacktrace, file=dfile)
 
 
 @bot.command(name='memtrace', help='Outputs last memorytrace', aliases=['t', 'trace'])
