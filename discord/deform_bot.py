@@ -897,7 +897,7 @@ async def check_followers(api):
                 img.close()
                 offset = (offset[0]+100, offset[1])
             
-            banner.save(os.path.join("results", "banner.jpg"), "JPG")
+            banner.save(os.path.join("results", "banner.jpg"), "JPEG")
             banner.close()
             api.update_profile_banner(os.path.join("results", "banner.jpg"))
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
