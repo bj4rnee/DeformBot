@@ -31,6 +31,8 @@ You can display the help message with `§help`.\
 Reacting to an image with the `🤖`-emoji will trigger DeformBot to process it.\
 Additionally `§deform` alias `§d` causes the bot to use the attached image of the message containing the command (or the image replied to with a command).
 
+[NOTE] `$` now works as a prefix too!
+
 # Command arguments
 Arguments for the `§d` command can be used as follows:\
 `§deform [option0][value] [option1][value] ...`
