@@ -490,6 +490,20 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
+@bot.command(name='trigger', help='Triggers testing function')
+async def trigger(ctx):
+    try:
+        # test this function call
+        div_by_zero = 1/0
+        pass
+    except Exception as e:
+        embed_stacktrace = discord.Embed(title=':x: Event Error tested function', color=0xFF5555)
+        embed_stacktrace.add_field(name='Traceback', value="Traceback")
+        embed_stacktrace.description = traceback.format_exc()
+        embed_stacktrace.timestamp = datetime.utcnow()
+    await ctx.send(embed=embed_stacktrace)
+
+
 @bot.command(name='memtrace', help='Outputs last memorytrace', aliases=['t', 'trace'])
 async def memtrace(ctx):
     # tracker.print_diff() # this termporarly solves schroedingers memory leak??
@@ -852,6 +866,15 @@ async def check_mentions(api, s_id):
 #api.update_status('@' + tweet.user.screen_name + " Here you go:", tweet.id, media_ids=[result_img.media_id])
 
     return new_since_id
+
+
+async def check_followers(api, s_id):
+    try:
+        followers = api.get_followers(user_id=1525511476391428096, count=5)
+        print(followers)
+    except (tweepy.TweepyException, tweepy.HTTPException) as e:
+        print("[Error] TweepyException: " + str(e))
+    return
 
 
 # THIS IS THE LOOP FOR THE TWITTER BOT
