@@ -885,16 +885,21 @@ async def check_followers(api):
                     shutil.copyfileobj(r.raw, out_file)
                     out_file.flush()
                 avatars.append(image_name)
+
             # construct banner image
             banner = Image.open("../misc/DeformBot_banner.png", 'r')
             bn_w, bn_h = banner.size
             offset = (374,350)
+
             for avatar in avatars:
                 img = Image.open(os.path.join("raw", avatar), 'r')
                 banner.paste(img, offset)
-                img.close
+                img.close()
                 offset = (offset[0]+100, offset[1])
-            banner.save(os.path.join("results", "banner.jpeg"), "JPEG")
+            
+            banner.save(os.path.join("results", "banner.jpg"), "JPG")
+            banner.close()
+            api.update_profile_banner(os.path.join("results", "banner.jpg"))
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
     return
