@@ -503,7 +503,8 @@ async def trigger(ctx):
         embed_stacktrace.set_image(url="attachment://this_is_fine.png")
         embed_stacktrace.description = traceback.format_exc()
         embed_stacktrace.timestamp = datetime.utcnow()
-    await ctx.send(embed=embed_stacktrace, file=dfile)
+        await ctx.send(embed=embed_stacktrace, file=dfile)
+    return
 
 
 @bot.command(name='memtrace', help='Outputs last memorytrace', aliases=['t', 'trace'])
@@ -872,7 +873,7 @@ async def check_mentions(api, s_id):
 
 async def check_followers(api):
     try:
-        followers = api.get_followers(user_id=1525511476391428096, count=5)
+        followers = api.get_followers(user_id=1525511476391428096, count=2, skip_status=True)
         print(followers)
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
