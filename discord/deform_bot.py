@@ -381,7 +381,7 @@ def distort_image(fname, args):
             except Exception as e:
                 build_str += f" -flip "
                 continue
-            if cast_str == 'h':
+            if cast_str in ['', ' ', 'h', 'H']:
                 build_str += f" -flip "
                 continue
             else:
@@ -776,6 +776,8 @@ async def check_mentions(api, s_id):
             else:  # request will be processed -> if tweet.id is in queued requests it can be removed
                 if tweet.id in tweet_json:
                     tweet_json.remove(tweet.id)
+                    # now we must incr user_json otherwise overflowing tweets could spam the api
+                    user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
             # original status (if 'tweet' is a reply)
             reply_og_id = tweet.in_reply_to_status_id
