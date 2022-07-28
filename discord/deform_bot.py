@@ -375,6 +375,18 @@ def distort_image(fname, args):
             if cast_int >= -360 and cast_int <= 360:
                 build_str += f" -rotate {cast_int} "
             continue
+        if e.startswith('f'):  # flip-flag
+            try:
+                cast_str = str(e[1:2])
+            except Exception as e:
+                build_str += f" -flip "
+                continue
+            if cast_str == 'h':
+                build_str += f" -flip "
+                continue
+            else:
+                build_str += f" -flop "
+            continue
         if e.startswith('a'):  # stereo-flag (aka anaglyph)
             # -stereo doesnt really work in a single command, therefore anaglyph is always applied last. this is a bug.
             #build_str += f" -convert {fname} {fname} -composite -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} "

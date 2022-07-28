@@ -36,21 +36,22 @@ Additionally `§deform` alias `§d` causes the bot to use the attached image of 
 # Command arguments
 Arguments for the `§d` command can be used as follows:\
 `§deform [option0][value] [option1][value] ...`
-| option | description               | value type | value range  |
-|:------:|---------------------------|:----------:|--------------|
-| l      | seam carving factor       | int        | [0; 100]     |
-| s      | swirl                     | int        | [-360; +360] |
-| n      | noise                     | int        | [0; 100]     |
-| b      | blur                      | int        | [0; 100]     |
-| c      | contrast                  | int        | [-100; 100]  |
-| o      | implode                   | int        | [-100; 100]  |
-| d      | shepard's distortion (IWD)| int        | [0; 100]     |
-| w      | wave                      | int        | [0; 100]     |
-| r      | rotate (clockwise)        | int        | [-360; +360] |
-| a      | anaglyph (cyan-red 3D)    | bool       |              |
-| i      | invert colors             | bool       |              |
-| g      | grayscale colors          | bool       |              |
-| u      | disable compression       | bool       |              |
+| option | description                | value type | value range  |
+|:------:|----------------------------|:----------:|--------------|
+| l      | seam carving factor        | int        | [0; 100]     |
+| s      | swirl                      | int        | [-360; +360] |
+| n      | noise                      | int        | [0; 100]     |
+| b      | blur                       | int        | [0; 100]     |
+| c      | contrast                   | int        | [-100; 100]  |
+| o      | implode                    | int        | [-100; 100]  |
+| d      | shepard's distortion (IWD) | int        | [0; 100]     |
+| w      | wave                       | int        | [0; 100]     |
+| r      | rotate (clockwise)         | int        | [-360; +360] |
+| f      | flip (horizontal, vertical)| string     | ['h','v']    |
+| a      | anaglyph (cyan-red 3D)     | bool       |              |
+| i      | invert colors              | bool       |              |
+| g      | grayscale colors           | bool       |              |
+| u      | disable compression        | bool       |              |
 
 All arguments can be arbitrarily combined or left out.
 Only integer values are accepted, I advise to play around with those values to find something that looks good.\
