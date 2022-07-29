@@ -508,6 +508,11 @@ async def garbage(ctx):
     await ctx.send(embed=embed_crash)
 
 
+@bot.command(name='ai', help='generate image with AI', aliases=['deformai']) 
+async def ai(ctx):
+    return
+
+
 @bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
