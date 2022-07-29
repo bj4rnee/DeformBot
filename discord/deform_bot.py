@@ -78,7 +78,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.1_dev"
+VERSION = "1.4.2_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -962,7 +962,7 @@ async def twitter_bot_loop():
         print("[Error] Couldn't write 'tweet_overflow.json': " + str(e))
 
 
-@tasks.loop(seconds=250)
+@tasks.loop(seconds=360)
 async def decr_interactions_loop():
     global user_json
     for u in user_json:
