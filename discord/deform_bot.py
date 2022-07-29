@@ -78,7 +78,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.0_dev"
+VERSION = "1.4.1_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -97,8 +97,9 @@ ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN_MANAGE')
 USER_ID = os.getenv('DB_USER_ID')
 since_id = int(os.getenv('last_id'))
+latest_followers = []
 user_json = {}
-tweet_json = [] # keep in mind this is a list and not a dict
+tweet_json = []  # keep in mind this is a list and not a dict
 
 # load info about twitter users interacting with bot
 # this is a fix for feedback loops with e.g. other image bots
@@ -307,9 +308,16 @@ def distort_image(fname, args):
             except Exception as e:
                 arg_error_flag = True
                 continue
-            if cast_int >= -100 and cast_int <= 100:
-                cast_float = float(cast_int)/100
+            # explode
+            if cast_int >= -100 and cast_int < 0:
+                cast_float = round(interp(cast_int, [-100, -1], [-1.15, -0.01]), 2)
                 build_str += f" -implode {cast_float} "
+                continue
+            # implode
+            else:
+                if cast_int > 0 and cast_int <= 100:
+                    cast_float = float(cast_int)/100
+                    build_str += f" -implode {cast_float} "
             continue
         if e.startswith('w'):  # wave-flag
             try:
@@ -366,6 +374,18 @@ def distort_image(fname, args):
                 continue
             if cast_int >= -360 and cast_int <= 360:
                 build_str += f" -rotate {cast_int} "
+            continue
+        if e.startswith('f'):  # flip-flag
+            try:
+                cast_str = str(e[1:2])
+            except Exception as e:
+                build_str += f" -flip "
+                continue
+            if cast_str in ['', ' ', 'h', 'H']:
+                build_str += f" -flip "
+                continue
+            else:
+                build_str += f" -flop "
             continue
         if e.startswith('a'):  # stereo-flag (aka anaglyph)
             # -stereo doesnt really work in a single command, therefore anaglyph is always applied last. this is a bug.
@@ -424,7 +444,7 @@ def distort_image(fname, args):
                 while (os.path.exists(os.path.join(bkp_path, bkp_name))):
                     if DEBUG:
                         print("[ERROR]: filename collision detected: " + bkp_name)
-                    bkp_name = str(uuid.uuid4()) + '.jpg' # generate new fname
+                    bkp_name = str(uuid.uuid4()) + '.jpg'  # generate new fname
                 shutil.copy(f"results/{fname}", os.path.join(bkp_path, bkp_name))
                 if DEBUG:
                     print(f"stored image: {bkp_name}")
@@ -481,6 +501,23 @@ async def on_message(message):
         await message.channel.send(response)
 
     await bot.process_commands(message)
+
+
+@bot.command(name='trigger', help='Triggers testing function')
+async def trigger(ctx):
+    try:
+        # test this function call
+        div_by_zero = 1/0
+        pass
+    except Exception as e:
+        embed_stacktrace = discord.Embed(title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
+        #embed_stacktrace.add_field(name='Traceback', value="Traceback")
+        dfile = discord.File("../misc/this_is_fine.png", filename="this_is_fine.png")
+        embed_stacktrace.set_image(url="attachment://this_is_fine.png")
+        embed_stacktrace.description = traceback.format_exc()
+        embed_stacktrace.timestamp = datetime.utcnow()
+        await ctx.send(embed=embed_stacktrace, file=dfile)
+    return
 
 
 @bot.command(name='memtrace', help='Outputs last memorytrace', aliases=['t', 'trace'])
@@ -567,7 +604,8 @@ async def deform(ctx, *args):
                             break
                         else:
                             url = omsg.embeds[0].image.url
-                            if isinstance(url, str) == False: # this might be a problem: if the first embed db sees has a faulty url, it returns error
+                            # this might be a problem: if the first embed db sees has a faulty url, it returns error
+                            if isinstance(url, str) == False:
                                 await ctx.send(embed=embed_nofile_error)
                                 return
                             break
@@ -625,7 +663,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                 msg = reaction.message
                 ch = msg.channel
 
-                async with ch.typing(): #trigger typing indicator
+                async with ch.typing():  # trigger typing indicator
                     # first delete the existing files
                     for delf in os.listdir("raw"):
                         if delf.endswith(".jpg"):
@@ -658,7 +696,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                                 with open(os.path.join("raw", image_name), 'wb') as out_file:
                                     if DEBUG:
                                         print("───────────" +
-                                            image_name + "───────────")
+                                              image_name + "───────────")
                                         print("saving image: " + image_name)
                                     shutil.copyfileobj(r.raw, out_file)
                                     out_file.flush()
@@ -699,12 +737,13 @@ async def check_mentions(api, s_id):
 
     for twObj in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
         mentions.append(twObj)
-    
+
     for twJson in tweet_json:
         try:
             mentions.append(api.get_status(twJson, tweet_mode='extended'))
         except (tweepy.TweepyException, tweepy.HTTPException) as e:
-            print("[Error] TweepyException: " + str(e) + ". StatusID: " + str(twJson))
+            print("[Error] TweepyException: " +
+                  str(e) + ". StatusID: " + str(twJson))
             tweet_json.remove(twJson)
 
     try:
@@ -714,8 +753,8 @@ async def check_mentions(api, s_id):
             # only works when process is terminated
             set_key(".env", 'last_id', str(new_since_id))
 
-            #increment number of interactions from this user
-            if tweet.id not in tweet_json: # only increment when tweet isn't overflowing
+            # increment number of interactions from this user
+            if tweet.id not in tweet_json:  # only increment when tweet isn't overflowing
                 user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
             if hasattr(tweet, 'text'):
@@ -736,11 +775,14 @@ async def check_mentions(api, s_id):
                 if tweet.id not in tweet_json:
                     tweet_json.append(tweet.id)
                     if DEBUG:
-                        print("[ERROR] overflowing tweet from " + tweet.user.screen_name + ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+                        print("[ERROR] overflowing tweet from " + tweet.user.screen_name +
+                              ": '" + tweet_txt + "', status_id: " + str(tweet.id))
                 continue
-            else: # request will be processed -> if tweet.id is in queued requests it can be removed
+            else:  # request will be processed -> if tweet.id is in queued requests it can be removed
                 if tweet.id in tweet_json:
                     tweet_json.remove(tweet.id)
+                    # now we must incr user_json otherwise overflowing tweets could spam the api
+                    user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
             # original status (if 'tweet' is a reply)
             reply_og_id = tweet.in_reply_to_status_id
@@ -818,7 +860,8 @@ async def check_mentions(api, s_id):
 
                             if arg_error_flag:
                                 arg_error_flag = False
-                                print("[Twitter] argument error flag was true")  # we're not sending massive amounts of error msgs to twitter
+                                # we're not sending massive amounts of error msgs to twitter
+                                print("[Twitter] argument error flag was true")
 
                             if DEBUG:
                                 print("distorted image: " + image_name)
@@ -842,7 +885,7 @@ async def check_mentions(api, s_id):
                 else:
                     # unsafe url
                     api.update_status(status="[ERROR] Unsafe url detected. Only images hosted on Twitter are supported at the moment.",
-                                          in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                                      in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException: " + str(e))
@@ -852,13 +895,58 @@ async def check_mentions(api, s_id):
     return new_since_id
 
 
+async def check_followers(api, follower_list):
+    """checks and processes followers in v1.1 api
+    
+    Important
+    ------
+        this function is heavily rate-limited and can only be called once a minute!
+    """
+    try:
+        followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
+        if followers == follower_list:
+            return followers # if latest followers didnt change, we can return
+        avatars = []
+        async with lock:
+            for follower in followers:
+                avatar_url = follower.profile_image_url_https.replace("_normal.jpg", "_bigger.jpg")
+                r = requests.get(avatar_url, stream=True)
+                image_name = str(follower.id) + '.jpg'
+
+                with open(os.path.join("raw", image_name), 'wb') as out_file:
+                    shutil.copyfileobj(r.raw, out_file)
+                    out_file.flush()
+                avatars.append(image_name)
+
+            # construct banner image
+            banner = Image.open("../misc/DeformBot_banner.png", 'r')
+            bn_w, bn_h = banner.size
+            offset = (513, 375)
+
+            for avatar in avatars:
+                img = Image.open(os.path.join("raw", avatar), 'r')
+                banner.paste(img, offset)
+                img.close()
+                offset = (offset[0]+100, offset[1])
+
+            banner.save(os.path.join("results", "banner.jpg"), "JPEG")
+            banner.close()
+            api.update_profile_banner(os.path.join("results", "banner.jpg"))
+    except (tweepy.TweepyException, tweepy.HTTPException) as e:
+        print("[Error] TweepyException: " + str(e))
+        return follower_list
+    return followers
+
+
 # THIS IS THE LOOP FOR THE TWITTER BOT
 @tasks.loop(seconds=75)
 async def twitter_bot_loop():
     global since_id
+    global latest_followers
     global user_json
     # execute this every 75 seconds
     since_id = await check_mentions(api, since_id)
+    latest_followers = await check_followers(api, latest_followers)
     # then dump updated user json to file
     try:
         with open('user_interact.json', 'w') as f:
@@ -878,9 +966,9 @@ async def twitter_bot_loop():
 async def decr_interactions_loop():
     global user_json
     for u in user_json:
-        user_json[u] = (int(user_json[u])-1) if (int(user_json[u])>0) else 0
+        user_json[u] = (int(user_json[u])-1) if (int(user_json[u]) > 0) else 0
         # remove user from dict if he has no more activity
-        #if int(user_json[u]==0):
+        # if int(user_json[u]==0):
         #    user_json.pop(u, None)
 
 bot.run(TOKEN)
