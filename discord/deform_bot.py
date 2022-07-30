@@ -888,7 +888,7 @@ async def check_mentions(api, s_id):
                                       in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                     continue
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
-        print("[Error] TweepyException: " + str(e))
+        print("[Error] TweepyException in check_mentions: " + str(e))
 
 #api.update_status('@' + tweet.user.screen_name + " Here you go:", tweet.id, media_ids=[result_img.media_id])
 
@@ -909,7 +909,7 @@ async def check_followers(api, follower_list):
         avatars = []
         async with lock:
             for follower in followers:
-                avatar_url = follower.profile_image_url_https.replace("_normal.jpg", "_bigger.jpg")
+                avatar_url = follower.profile_image_url_https.replace("_normal.jpg", "")#"_bigger.jpg")
                 r = requests.get(avatar_url, stream=True)
                 image_name = str(follower.id) + '.jpg'
 
@@ -921,10 +921,12 @@ async def check_followers(api, follower_list):
             # construct banner image
             banner = Image.open("../misc/DeformBot_banner.png", 'r')
             bn_w, bn_h = banner.size
-            offset = (513, 375)
+            offset = (470, 350)#(513, 375)
 
             for avatar in avatars:
                 img = Image.open(os.path.join("raw", avatar), 'r')
+                # adjust size
+                img = img.resize((100, 100), Image.ANTIALIAS)
                 banner.paste(img, offset)
                 img.close()
                 offset = (offset[0]+100, offset[1])
@@ -933,7 +935,7 @@ async def check_followers(api, follower_list):
             banner.close()
             api.update_profile_banner(os.path.join("results", "banner.jpg"))
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
-        print("[Error] TweepyException: " + str(e))
+        print("[Error] TweepyException in check_followers: " + str(e))
         return follower_list
     return followers
 
