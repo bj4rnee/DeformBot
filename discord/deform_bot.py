@@ -927,7 +927,7 @@ async def check_followers(api, follower_list):
             for avatar in avatars:
                 img = Image.open(os.path.join("raw", avatar), 'r')
                 # adjust size
-                img = img.resize((100, 100), Image.ANTIALIAS)
+                img = img.resize((100, 100), Image.LANCZOS)
                 banner.paste(img, offset)
                 img.close()
                 offset = (offset[0]+115, offset[1])
