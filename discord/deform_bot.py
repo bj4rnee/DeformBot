@@ -910,6 +910,7 @@ async def check_followers(api, follower_list):
         async with lock:
             for follower in followers:
                 avatar_url = follower.profile_image_url_https.replace("_normal.jpg", "")#"_bigger.jpg")
+                print(avatar_url)
                 r = requests.get(avatar_url, stream=True)
                 image_name = str(follower.id) + '.jpg'
 

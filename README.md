@@ -80,6 +80,8 @@ To use command arguments simply append them after the mention.\
 - GIF support [beta]
 - trigger typing indicator [beta]
 - search for last image on command if nothing else is found [beta]
+- fix reply to sensitive image not being sensitive on twitter
+- fix twitter functions blocking shard heartbeat
 
 # Known Bugs
 - `§d i s60` causes a big black circle to appear.
