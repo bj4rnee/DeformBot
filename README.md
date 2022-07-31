@@ -86,6 +86,7 @@ To use command arguments simply append them after the mention.\
 # Known Bugs
 - `§d i s60` causes a big black circle to appear.
 - `§d i o60` same bug as above, appears to happen with processing of circular effects
+- invalid argument embed is bugged
 
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea

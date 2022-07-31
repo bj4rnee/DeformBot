@@ -756,7 +756,7 @@ async def check_mentions(api, s_id):
 
             # increment number of interactions from this user
             if tweet.id not in tweet_json:  # only increment when tweet isn't overflowing
-                user_json[tweet.user.screen_name] = (min(int(user_json[tweet.user.screen_name])+1), MAX_INTERACTIONS*2) if (tweet.user.screen_name in user_json) else 1
+                user_json[tweet.user.screen_name] = (min(int(user_json[tweet.user.screen_name])+1, MAX_INTERACTIONS*2)) if (tweet.user.screen_name in user_json) else 1
 
             if hasattr(tweet, 'text'):
                 tweet_txt = tweet.text.lower()
