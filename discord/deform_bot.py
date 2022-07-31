@@ -930,7 +930,7 @@ async def check_followers(api, follower_list):
                 img = img.resize((100, 100), Image.ANTIALIAS)
                 banner.paste(img, offset)
                 img.close()
-                offset = (offset[0]+100, offset[1])
+                offset = (offset[0]+115, offset[1])
 
             banner.save(os.path.join("results", "banner.jpg"), "JPEG")
             banner.close()
