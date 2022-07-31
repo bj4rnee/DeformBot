@@ -910,7 +910,6 @@ async def check_followers(api, follower_list):
         async with lock:
             for follower in followers:
                 avatar_url = follower.profile_image_url_https.replace("_normal.jpg", ".jpg")#"_bigger.jpg")
-                print(avatar_url)
                 r = requests.get(avatar_url, stream=True)
                 image_name = str(follower.id) + '.jpg'
 
@@ -927,7 +926,7 @@ async def check_followers(api, follower_list):
             for avatar in avatars:
                 img = Image.open(os.path.join("raw", avatar), 'r')
                 # adjust size
-                img = img.resize((100, 100), Image.LANCZOS)
+                img = img.resize((100, 100), Image.Resampling.LANCZOS)
                 banner.paste(img, offset)
                 img.close()
                 offset = (offset[0]+115, offset[1])
