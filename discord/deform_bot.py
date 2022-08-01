@@ -736,18 +736,18 @@ async def check_mentions(api, s_id):
     twitter_media_url = ""
     mentions = []
 
-    for twObj in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
-        mentions.append(twObj)
-
-    for twJson in tweet_json:
-        try:
-            mentions.append(api.get_status(twJson, tweet_mode='extended'))
-        except (tweepy.TweepyException, tweepy.HTTPException) as e:
-            print("[Error] TweepyException: " +
-                  str(e) + ". StatusID: " + str(twJson))
-            tweet_json.remove(twJson)
-
     try:
+        for twObj in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
+            mentions.append(twObj)
+
+        for twJson in tweet_json:
+            try:
+                mentions.append(api.get_status(twJson, tweet_mode='extended'))
+            except (tweepy.TweepyException, tweepy.HTTPException) as e:
+                print("[Error] TweepyException: " +
+                    str(e) + ". StatusID: " + str(twJson))
+                tweet_json.remove(twJson)
+
         for tweet in mentions:
             new_since_id = max(tweet.id, new_since_id)
             #os.environ['last_id'] = str(new_since_id)
