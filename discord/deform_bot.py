@@ -67,6 +67,7 @@ import gc
 import tweepy
 import logging
 import json
+import itertools
 from numpy import interp
 from datetime import datetime, timedelta
 import discord
@@ -740,9 +741,14 @@ async def check_mentions(api, s_id):
         for twObj in tweepy.Cursor(api.mentions_timeline, since_id=new_since_id, count=100, tweet_mode='extended').items():
             mentions.append(twObj)
 
-        for twJson in tweet_json:
+        for twJson in itertools.islice(tweet_json, 10):
             try:
-                mentions.append(api.get_status(twJson, tweet_mode='extended'))
+                t = api.get_status(twJson, tweet_mode='extended')
+                if t.user.screen_name.casefold() == "distortbot".casefold():
+                    tweet_json.remove(twJson)
+                    continue
+                else:
+                    mentions.append(t)
             except (tweepy.TweepyException, tweepy.HTTPException) as e:
                 print("[Error] TweepyException: " +
                     str(e) + ". StatusID: " + str(twJson))
