@@ -879,8 +879,7 @@ async def check_mentions(api, s_id):
                             result_img = api.media_upload(
                                 os.path.join("results", image_name))
                             if DEBUG:
-                                api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\nargs=" + str(
-                                    args) + "\n#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                                api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                                 continue
                             api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
                                               possibly_sensitive=sensitive, media_ids=[result_img.media_id])
