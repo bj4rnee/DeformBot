@@ -129,6 +129,8 @@ tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
+# list of twitter users which cannot have overflowing tweets processed
+blocked_from_of = ["distortbot", "makeitacover", "wordpadbot"]
 
 # this is a hack to log print to a file but keep stdout
 log_path = os.path.join("/home", "db_outputs", "db.log")
@@ -744,7 +746,7 @@ async def check_mentions(api, s_id):
         for twJson in itertools.islice(tweet_json, 10):
             try:
                 t = api.get_status(twJson, tweet_mode='extended')
-                if t.user.screen_name.casefold() == "distortbot".casefold():
+                if t.user.screen_name.casefold() in blocked_from_of:
                     tweet_json.remove(twJson)
                     continue
                 else:
@@ -986,6 +988,7 @@ async def decr_interactions_loop():
             #to_remove.append(u)
             pass
     for tr in to_remove:
-        user_json.pop(tr, None)
+        pass
+        #user_json.pop(tr, None)
 
 bot.run(TOKEN)
