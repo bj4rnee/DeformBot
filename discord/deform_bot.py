@@ -794,7 +794,7 @@ async def check_mentions(api, s_id):
                                 ": '" + tweet_txt + "', status_id: " + str(tweet.id))
                     continue
                 else:  # request will be processed -> if tweet.id is in queued requests it can be removed
-                    print("debug output...: "+tweet.user.screen_name + ",  " + user_json)
+                    print("debug output...: "+tweet.user.screen_name + ",  " + str(user_json))
                     if tweet.id in tweet_json:
                         tweet_json.remove(tweet.id)
                         # now we must incr user_json otherwise overflowing tweets could spam the api
