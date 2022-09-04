@@ -79,7 +79,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.2_dev"
+VERSION = "1.4.3_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -439,7 +439,7 @@ def distort_image(fname, args):
     bkp_path = OUTPUT_PATH
     if os.path.exists(bkp_path):
         if DEBUG:
-            print("[DEBUG]: free backup space: " +
+            print("[DEBUG] free backup space: " +
                   str(psutil.disk_usage(bkp_path).free) + "B")
         if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
             try:
@@ -447,11 +447,16 @@ def distort_image(fname, args):
                 # check if name collides (extremely unlikely but possible)
                 while (os.path.exists(os.path.join(bkp_path, bkp_name))):
                     if DEBUG:
-                        print("[ERROR]: filename collision detected: " + bkp_name)
+                        print("[ERROR] filename collision detected: " + bkp_name)
                     bkp_name = str(uuid.uuid4()) + '.jpg'  # generate new fname
-                shutil.copy(f"results/{fname}", os.path.join(bkp_path, bkp_name))
-                if DEBUG:
-                    print(f"stored image: {bkp_name}")
+                    if DEBUG:
+                        print("[INFO] new non-colliding file name: " + bkp_name)
+                try:
+                    shutil.copy(f"results/{fname}", os.path.join(bkp_path, bkp_name))
+                    if DEBUG:
+                        print(f"stored image: {bkp_name}")
+                except OSError as oe:
+                    print("[ERROR] probably ran out of inodes. Action must be taken!")
             except:
                 traceback.print_exc()
         else:
