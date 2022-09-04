@@ -777,19 +777,24 @@ async def check_mentions(api, s_id):
             tweet_txt = tweet_txt.encode("ascii", errors="ignore").decode()
 
             # if user sent too many requests in the past minutes, db ignores
-            if int(user_json[tweet.user.screen_name]) >= MAX_INTERACTIONS:
-                # add tweet to overflow dict
-                if tweet.id not in tweet_json:
-                    tweet_json.append(tweet.id)
-                    if DEBUG:
-                        print("[ERROR] overflowing tweet from " + tweet.user.screen_name +
-                              ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+            try:
+                if int(user_json[tweet.user.screen_name]) >= MAX_INTERACTIONS:
+                    # add tweet to overflow dict
+                    if tweet.id not in tweet_json:
+                        tweet_json.append(tweet.id)
+                        if DEBUG:
+                            print("[ERROR] overflowing tweet from " + tweet.user.screen_name +
+                                ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+                    continue
+                else:  # request will be processed -> if tweet.id is in queued requests it can be removed
+                    if tweet.id in tweet_json:
+                        tweet_json.remove(tweet.id)
+                        # now we must incr user_json otherwise overflowing tweets could spam the api
+                        user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
+            except KeyError as ke:
+                # somehow this can be buggy and users are not written to user_json => investigate futher
+                user_json[tweet.user.screen_name] = 1
                 continue
-            else:  # request will be processed -> if tweet.id is in queued requests it can be removed
-                if tweet.id in tweet_json:
-                    tweet_json.remove(tweet.id)
-                    # now we must incr user_json otherwise overflowing tweets could spam the api
-                    user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
 
             # original status (if 'tweet' is a reply)
             reply_og_id = tweet.in_reply_to_status_id
@@ -973,10 +978,13 @@ async def twitter_bot_loop():
 @tasks.loop(seconds=360)
 async def decr_interactions_loop():
     global user_json
+    to_remove = []
     for u in user_json:
         user_json[u] = (int(user_json[u])-1) if (int(user_json[u]) > 0) else 0
         # remove user from dict if he has no more activity
-        # if int(user_json[u]==0):
-        #    user_json.pop(u, None)
+        if int(user_json[u]==0):
+            to_remove.append(u)
+    for tr in to_remove:
+        user_json.pop(tr, None)
 
 bot.run(TOKEN)
