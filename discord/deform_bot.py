@@ -794,7 +794,7 @@ async def check_mentions(api, s_id):
                                 ": '" + tweet_txt + "', status_id: " + str(tweet.id))
                     continue
                 else:  # request will be processed -> if tweet.id is in queued requests it can be removed
-                    print("debug output...: "+tweet.user.screen_name)
+                    print("debug output...: "+tweet.user.screen_name + ",  " + user_json[tweet.user.screen_name])
                     if tweet.id in tweet_json:
                         tweet_json.remove(tweet.id)
                         # now we must incr user_json otherwise overflowing tweets could spam the api
@@ -991,11 +991,11 @@ async def decr_interactions_loop():
     for u in user_json:
         user_json[u] = (int(user_json[u])-1) if (int(user_json[u]) > 0) else 0
         # remove user from dict if he has no more activity
-        if int(user_json[u]==0):
-            #to_remove.append(u)
-            pass
-    for tr in to_remove:
-        pass
-        #user_json.pop(tr, None)
+    #     if int(user_json[u]==0):
+    #         #to_remove.append(u)
+    #         pass
+    # for tr in to_remove:
+    #     pass
+    #     #user_json.pop(tr, None)
 
 bot.run(TOKEN)
