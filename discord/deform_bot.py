@@ -801,6 +801,7 @@ async def check_mentions(api, s_id):
             except KeyError as ke:
                 # somehow this can be buggy and users are not written to user_json => investigate futher
                 user_json[tweet.user.screen_name] = 1
+                print("[ERROR] keyerror occured: "+ ke)
                 continue
 
             # original status (if 'tweet' is a reply)
