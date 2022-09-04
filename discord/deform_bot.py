@@ -983,7 +983,8 @@ async def decr_interactions_loop():
         user_json[u] = (int(user_json[u])-1) if (int(user_json[u]) > 0) else 0
         # remove user from dict if he has no more activity
         if int(user_json[u]==0):
-            to_remove.append(u)
+            #to_remove.append(u)
+            pass
     for tr in to_remove:
         user_json.pop(tr, None)
 
