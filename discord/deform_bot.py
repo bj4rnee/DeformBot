@@ -130,7 +130,7 @@ process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
 # list of twitter users which cannot have overflowing tweets processed
-blocked_from_of = ["distortbot", "makeitacover", "wordpadbot"]
+blocked_from_of = ["distortbot", "makeitacover", "wordpadbot", "badkamenrider", "saikouhakkou1", ]
 
 # this is a hack to log print to a file but keep stdout
 log_path = os.path.join("/home", "db_outputs", "db.log")
