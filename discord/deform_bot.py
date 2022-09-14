@@ -79,7 +79,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.3_dev"
+VERSION = "1.4.4_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -101,6 +101,9 @@ since_id = int(os.getenv('last_id'))
 latest_followers = []
 user_json = {}
 tweet_json = []  # keep in mind this is a list and not a dict
+blocked_json = [] # blacklist
+# list of twitter users which cannot have overflowing tweets processed
+blocked_from_of = []
 
 # load info about twitter users interacting with bot
 # this is a fix for feedback loops with e.g. other image bots
@@ -117,6 +120,20 @@ try:
 except Exception as e:
     print("[Error] Couldn't read 'tweet_overflow.json': " + str(e))
 
+# load users which are blocked from using deformbot on twitter
+try:
+    with open('user_blocked.json') as f3:
+        blocked_json = json.load(f3)
+except Exception as e:
+    print("[Error] Couldn't read 'user_blocked.json': " + str(e))
+
+# load users which are blocked from having overflown tweets processed
+try:
+    with open('user_blocked_of.json') as f4:
+        blocked_from_of = json.load(f4)
+except Exception as e:
+    print("[Error] Couldn't read 'user_blocked_of.json': " + str(e))
+
 
 # the bot's command prefix for discord
 COMMAND_PREFIX = ['§', '$']
@@ -129,8 +146,6 @@ tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
-# list of twitter users which cannot have overflowing tweets processed
-blocked_from_of = ["distortbot", "makeitacover", "wordpadbot", "badkamenrider", "saikouhakkou1", ]
 
 # this is a hack to log print to a file but keep stdout
 log_path = os.path.join("/home", "db_outputs", "db.log")
@@ -766,6 +781,10 @@ async def check_mentions(api, s_id):
             #os.environ['last_id'] = str(new_since_id)
             # only works when process is terminated
             set_key(".env", 'last_id', str(new_since_id))
+
+            # check if user is blacklisted
+            if tweet.user.id in blocked_json:
+                continue
 
             # increment number of interactions from this user
             if tweet.id not in tweet_json:  # only increment when tweet isn't overflowing
