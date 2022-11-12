@@ -79,7 +79,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.4_test"
+VERSION = "1.4.5_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -519,10 +519,6 @@ async def on_ready():
     # bot.remove_command('help')
 
 
-@bot.hybrid_command(name = "dbslash", with_app_command = True, description = "This is a test...")
-async def dbslash(ctx):
-    await ctx.reply("it worked!")
-
 
 @bot.hybrid_command(name = "status", with_app_command = True, description = "Shows status")
 async def status(ctx):
@@ -640,8 +636,9 @@ async def deform(ctx, *args):
                             url = omsg.embeds[0].image.url
                             # this might be a problem: if the first embed db sees has a faulty url, it returns error
                             if isinstance(url, str) == False:
-                                await ctx.send(embed=embed_nofile_error)
-                                return
+                                # await ctx.send(embed=embed_nofile_error)
+                                # return
+                                raise TypeError("Embed didn't contain valid image link")
                             break
                     except (IndexError, TypeError):
                         if omsg == older_msgs[-1]:
