@@ -634,7 +634,8 @@ async def deform(ctx, *args):
                         await ctx.send(embed=embed_nofile_error)
                         return
             except (IndexError, TypeError):
-                older_msgs = await ch.history(limit=10).flatten()
+                #older_msgs = await ch.history(limit=10).flatten() # deprecated
+                older_msgs = [m async for m in ch.history(limit=10)] # discord.py v2 method of handling this is list comprehension
                 # check if an older msg contains image
                 for omsg in older_msgs:
                     try:
