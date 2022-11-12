@@ -734,7 +734,7 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                             out_file.flush()
 
                             # unfortunately await can't be used here so the response has to be deferred
-                            interaction.response.defer()
+                            await interaction.response.defer()
                             distorted_file = distort_image(image_name, ())
 
                             if DEBUG:
