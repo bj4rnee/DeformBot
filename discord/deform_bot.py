@@ -519,33 +519,27 @@ async def on_ready():
     # bot.remove_command('help')
 
 
-@bot.hybrid_command(name = "dbslash", with_app_command = True, description = "this is a test...")
+@bot.hybrid_command(name = "dbslash", with_app_command = True, description = "This is a test...")
 async def dbslash(ctx):
     await ctx.reply("it worked!")
 
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-
-    if message.content == '§status':
-        current_time = datetime.now()
-        timestr = 'Uptime:\t{}\n'.format(current_time.replace(
-            microsecond=0) - start_time.replace(microsecond=0))
-        memstr = 'Memory:\t' + \
-            str(round(process.memory_info().rss / 1024 ** 2, 2)) + 'MB\n'
-        response = "```[Debug]\n" + timestr + \
-            memstr + "Vers..:\t" + VERSION + "```"
-        await message.channel.send(response)
-
-    await bot.process_commands(message)
+@bot.hybrid_command(name = "status", with_app_command = True, description = "Shows status")
+async def status(ctx):
+    current_time = datetime.now()
+    timestr = 'Uptime:\t{}\n'.format(current_time.replace(
+        microsecond=0) - start_time.replace(microsecond=0))
+    memstr = 'Memory:\t' + \
+        str(round(process.memory_info().rss / 1024 ** 2, 2)) + 'MB\n'
+    response = "```[Debug]\n" + timestr + \
+        memstr + "Vers..:\t" + VERSION + "```"
+    await ctx.send(response)
 
 
 @bot.command(name='trigger', help='Triggers testing function')
 async def trigger(ctx):
     try:
-        # test this function call
+        # test this function call / loc
         div_by_zero = 1/0
         pass
     except Exception as e:
@@ -589,7 +583,7 @@ async def ai(ctx):
     return
 
 
-@bot.command(name='help', help='Shows usage info', aliases=['h', 'info', 'usage'])
+@bot.hybrid_command(name='help', with_app_command = True, help='Shows usage info', description='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
     helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  shepard's distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
