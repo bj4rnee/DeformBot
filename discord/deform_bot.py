@@ -733,7 +733,8 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                             shutil.copyfileobj(r.raw, out_file)
                             out_file.flush()
 
-                            # unfortunately await can't be used here
+                            # unfortunately await can't be used here so the response has to be deferred
+                            interaction.response.defer()
                             distorted_file = distort_image(image_name, ())
 
                             if DEBUG:
@@ -742,9 +743,9 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                                     "──────────────────────────────────────────────────────────────")
                             # send distorted image
                             if DEBUG:
-                                await interaction.response.send_message("image ID: " + image_name.replace(".jpg", ""), file=distorted_file)
+                                await interaction.followup.send("image ID: " + image_name.replace(".jpg", ""), file=distorted_file)
                                 return
-                            await interaction.response.send_message(file=distorted_file)
+                            await interaction.followup.send(file=distorted_file)
                             return
                     else:
                         if DEBUG:
