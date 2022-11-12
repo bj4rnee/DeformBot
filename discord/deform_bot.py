@@ -691,7 +691,68 @@ async def deform(ctx, *args):
 # deform via context menu
 @bot.tree.context_menu(name="Deform")
 async def deform_cm(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.send_message("work in progress...")
+    async with lock:
+        msg = message
+        ch = msg.channel
+
+        async with ch.typing():  # trigger typing indicator
+            # first delete the existing files
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+
+            # fetch and process the image
+            try:
+                if len(msg.embeds) <= 0:  # no embeds
+                    url = msg.attachments[0].url
+                else:
+                    url = msg.embeds[0].image.url
+                    if isinstance(url, str) == False:
+                        await interaction.response.send_message(embed=embed_nofile_error)
+                        return
+            except (IndexError, TypeError):
+                if DEBUG:  # don't send errors on reaction
+                    await interaction.response.send_message(embed=embed_nofile_error)
+                return
+            else:
+                if url[0:26] == "https://cdn.discordapp.com":
+                    if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
+                        r = requests.get(url, stream=True)
+                        image_name = str(uuid.uuid4()) + \
+                            '.jpg'  # generate uuid
+
+                        with open(os.path.join("raw", image_name), 'wb') as out_file:
+                            if DEBUG:
+                                print("───────────" +
+                                        image_name + "───────────")
+                                print("saving image: " + image_name)
+                            shutil.copyfileobj(r.raw, out_file)
+                            out_file.flush()
+
+                            # unfortunately await can't be used here
+                            distorted_file = distort_image(image_name, ())
+
+                            if DEBUG:
+                                print("distorted image: " + image_name)
+                                print(
+                                    "──────────────────────────────────────────────────────────────")
+                            # send distorted image
+                            if DEBUG:
+                                await interaction.response.send_message("image ID: " + image_name.replace(".jpg", ""), file=distorted_file)
+                                return
+                            await interaction.response.send_message(file=distorted_file)
+                            return
+                    else:
+                        if DEBUG:
+                            await interaction.response.send_message(embed=embed_wrongfile_error)
+                        return
+                else:
+                    await interaction.response.send_message(embed=embed_unsafeurl_error)
+                    return
 
 
 @bot.event
