@@ -71,6 +71,7 @@ import itertools
 from numpy import interp
 from datetime import datetime, timedelta
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv, set_key
 from io import BytesIO
@@ -591,6 +592,7 @@ async def help(ctx):
     await ctx.send(embed=help_embed)
 
 
+# standard non-slash command
 @bot.command(name='deform', help='deform an image', aliases=['d', 'D' 'distort'])
 async def deform(ctx, *args):
     global arg_error_flag
@@ -684,6 +686,12 @@ async def deform(ctx, *args):
                 # handle non-discord url
                 await ctx.send(embed=embed_unsafeurl_error)
                 return
+
+
+# deform via context menu
+@bot.tree.context_menu(name="Deform")
+async def deform_cm(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.send_message("work in progress...")
 
 
 @bot.event
