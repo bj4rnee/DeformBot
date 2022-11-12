@@ -79,7 +79,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.4_dev"
+VERSION = "1.4.4_test"
 # Turn off in production!
 DEBUG = True
 
@@ -146,6 +146,7 @@ tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
 arg_error_flag = False
+intents = discord.Intents.default()
 
 # this is a hack to log print to a file but keep stdout
 log_path = os.path.join("/home", "db_outputs", "db.log")
@@ -173,7 +174,7 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 api = tweepy.API(auth, wait_on_rate_limit=True)  # twitter api object
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
-                   description="an Open Source image distortion discord bot")
+                   description="an Open Source image distortion discord bot", intents=intents)
 client = discord.Client()
 bot.mutex = True  # mutex lock
 
