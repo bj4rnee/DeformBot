@@ -148,10 +148,12 @@ start_time = datetime.now()
 arg_error_flag = False
 intents = discord.Intents.default()
 intents.typing = True
-intents.message_content = True
 intents.dm_typing = True
-intents.message = True
+intents.message_content = True
+intents.messages = True
+intents.dm_messages = True
 intents.reactions = True
+intents.dm_reactions = True
 
 # this is a hack to log print to a file but keep stdout
 log_path = os.path.join("/home", "db_outputs", "db.log")
@@ -496,6 +498,8 @@ async def on_ready():
         print(f'{bot.user} has connected to Discord!')
     await bot.wait_until_ready()
     await bot.change_presence(activity=discord.Game(name="§help"))
+    #sync interaction tree (used for applications like slash cmds)
+    await bot.tree.sync()
     # Create API object
     try:
         api.verify_credentials()
