@@ -690,9 +690,24 @@ async def deform(ctx, *args):
 
 # slash command deform
 @bot.tree.command(name="deform", description="Deform an image with optional parameters")
-@app_commands.describe(args='for argument usage refer to /help')
-async def deform_slash(interaction: discord.Interaction, message: discord.Message, args: str):
-    await interaction.response.send_message(args)
+#@app_commands.describe(args='for argument usage refer to /help')
+@app_commands.describe(l='seam carving factor',
+    s='swirl',
+    n='noise',
+    b='blur',
+    c='contrast',
+    o='implode',
+    d="shepard's distortion (IWD)",
+    w='wave',
+    r='rotate (clockwise)',
+    f='flip (horizontal, vertical)',
+    a='anaglyph (cyan-red 3D)',
+    i='invert colors',
+    g='grayscale colors',
+    u='disable compression',
+    )
+async def deform_slash(interaction: discord.Interaction, l: int=-1, s: int=0, n: int=-1, b: int=-1, c: int=0, o: int=0, d: int=-1, w: int=-1, r: int=0, f: str='', a: bool=-1, i: bool=False, g: bool=False, u: bool=False):
+    await interaction.response.send_message("Hi")
 
 
 # deform via context menu
