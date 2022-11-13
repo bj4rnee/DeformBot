@@ -688,6 +688,13 @@ async def deform(ctx, *args):
                 return
 
 
+# slash command deform
+@bot.tree.command(name="deform", description="Deform an image with optional parameters")
+@app_commands.describe(args='for argument usage refer to /help')
+async def deform_slash(interaction: discord.Interaction, message: discord.Message, args: str):
+    await interaction.response.send_message(args)
+
+
 # deform via context menu
 @bot.tree.context_menu(name="Deform")
 async def deform_cm(interaction: discord.Interaction, message: discord.Message):
