@@ -689,25 +689,28 @@ async def deform(ctx, *args):
 
 
 # slash command deform
-@bot.tree.command(name="deform", description="Deform an image with optional parameters")
+@bot.tree.command(name="deform", description="Deform an image with optional parameters. For usage refer to /help")
 #@app_commands.describe(args='for argument usage refer to /help')
-@app_commands.describe(l='seam carving factor',
-    s='swirl',
-    n='noise',
-    b='blur',
-    c='contrast',
-    o='implode',
-    d="shepard's distortion (IWD)",
-    w='wave',
-    r='rotate (clockwise)',
-    f='flip (horizontal, vertical)',
-    a='anaglyph (cyan-red 3D)',
-    i='invert colors',
-    g='grayscale colors',
-    u='disable compression',
+@app_commands.describe(l='Seam carving factor',
+    s='Swirl',
+    n='Noise',
+    b='Blur',
+    c='Contrast',
+    o='Implode',
+    d="Shepard's distortion (IWD)",
+    w='Wave',
+    r='Rotate (clockwise)',
+    f='Flip (horizontal, vertical)',
+    a='Anaglyph (cyan-red 3D)',
+    i='Invert colors',
+    g='Grayscale colors',
+    u='Disable compression',
     )
-async def deform_slash(interaction: discord.Interaction, l: int=-1, s: int=0, n: int=-1, b: int=-1, c: int=0, o: int=0, d: int=-1, w: int=-1, r: int=0, f: str='', a: bool=-1, i: bool=False, g: bool=False, u: bool=False):
-    await interaction.response.send_message("Hi")
+@app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
+async def deform_slash(interaction: discord.Interaction, l: int=None, s: int=None, n: int=None, b: int=None, c: int=None, o: int=None, d: int=None, w: int=None, r: int=None, f: discord.app_commands.Choice[str]=None, a: bool=False, i: bool=False, g: bool=False, u: bool=False):
+    test_ = locals()
+    args = ()
+    await interaction.response.send_message(str(test_))
 
 
 # deform via context menu
