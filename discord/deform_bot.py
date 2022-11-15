@@ -429,7 +429,7 @@ def distort_image(fname, args, png: bool=False):
             anaglyph = True
             continue
         if e.startswith('i'):  # invert-flag
-            build_str += f" -negate "
+            build_str += f" -channel RGB -negate "
             continue
         if e.startswith('u'):
             continue
@@ -722,7 +722,7 @@ async def deform(ctx, *args):
                        u='Disable compression',
                        )
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
-async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message: int = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
+async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message: discord.Message = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
     args_dict = locals()
     args_dict.pop('interaction', None)  # remove interaction object
@@ -739,7 +739,8 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
     args = tuple(args)
 
     msg = message  # interactions aren't handled via a message. Therefore msg is a message ID integer.
-    
+    if (not file) and msg:
+        pass
     # Optional[Union[abc.GuildChannel, PartialMessageable, Thread]]
     ch = interaction.channel
 
