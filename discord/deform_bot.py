@@ -240,8 +240,8 @@ def distort_image(fname, args, png: bool=False):
 
     # convert image to 'RGB' (jpeg format). This fixes wrong encoding with discord
     if not png:
-        image.convert('RGB')
-        image.save(os.path.join("raw", fname))
+        image = image.convert('RGB')
+        image.save(os.path.join("raw", fname), format='JPEG')
     image.close()
 
     # build the command string
