@@ -89,7 +89,8 @@ load_dotenv()
 
 # Turn on if you want to disable the bot on twitter
 DISABLE_TWITTER = os.getenv('DISABLE_TWITTER')
-DISABLE_TWITTER = DISABLE_TWITTER.lower() in ['true', 'True', '1', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']
+DISABLE_TWITTER = DISABLE_TWITTER.lower(
+) in ['true', 'True', '1', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 CONSUMER_KEY = os.getenv('TWITTER_OAUTH_CONSUMER_KEY')
@@ -102,7 +103,7 @@ since_id = int(os.getenv('last_id'))
 latest_followers = []
 user_json = {}
 tweet_json = []  # keep in mind this is a list and not a dict
-blocked_json = [] # blacklist
+blocked_json = []  # blacklist
 # list of twitter users which cannot have overflowing tweets processed
 blocked_from_of = []
 
@@ -183,7 +184,7 @@ api = tweepy.API(auth, wait_on_rate_limit=True)  # twitter api object
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
                    description="an Open Source image distortion discord bot", intents=intents)
-client = discord.Client(intents=intents) # deprecated
+client = discord.Client(intents=intents)  # deprecated
 bot.mutex = True  # mutex lock
 
 embed_nofile_error = discord.Embed(
@@ -227,7 +228,7 @@ async def signal():  # free the lock
 # defaults values if flag is not set or otherwise specified
 # note that the default input for 'l' is 43 but it's interpolated to l=60
 # TODO better blur!
-def distort_image(fname, args):
+def distort_image(fname, args, png: bool=False):
     """function to distort an image using the magick library"""
     global arg_error_flag  # True if invalid arg is detected
     global argument_error
@@ -236,6 +237,12 @@ def distort_image(fname, args):
     anaglyph = False
     image = Image.open(os.path.join("raw", fname))
     imgdimens = image.width, image.height
+
+    # convert image to 'RGB' (jpeg format). This fixes wrong encoding with discord
+    if not png:
+        image.convert('RGB')
+        image.save(os.path.join("raw", fname))
+    image.close()
 
     # build the command string
     build_str = """ -background "#36393e" """  # this is the discord bg color
@@ -338,7 +345,8 @@ def distort_image(fname, args):
                 continue
             # explode
             if cast_int >= -100 and cast_int < 0:
-                cast_float = round(interp(cast_int, [-100, -1], [-1.15, -0.01]), 2)
+                cast_float = round(
+                    interp(cast_int, [-100, -1], [-1.15, -0.01]), 2)
                 build_str += f" -implode {cast_float} "
                 continue
             # implode
@@ -476,11 +484,13 @@ def distort_image(fname, args):
                     if DEBUG:
                         print("[INFO] new non-colliding file name: " + bkp_name)
                 try:
-                    shutil.copy(f"results/{fname}", os.path.join(bkp_path, bkp_name))
+                    shutil.copy(f"results/{fname}",
+                                os.path.join(bkp_path, bkp_name))
                     if DEBUG:
                         print(f"stored image: {bkp_name}")
                 except OSError as oe:
-                    print("[ERROR] probably ran out of inodes. Action must be taken!")
+                    print(
+                        "[ERROR] probably ran out of inodes. Action must be taken!")
             except:
                 traceback.print_exc()
         else:
@@ -499,7 +509,7 @@ async def on_ready():
         print(f'{bot.user} has connected to Discord!')
     await bot.wait_until_ready()
     await bot.change_presence(activity=discord.Game(name="§help"))
-    #sync interaction tree (used for applications like slash cmds)
+    # sync interaction tree (used for applications like slash cmds)
     await bot.tree.sync()
     # Create API object
     try:
@@ -520,8 +530,7 @@ async def on_ready():
     # bot.remove_command('help')
 
 
-
-@bot.hybrid_command(name = "status", with_app_command = True, description = "Shows status")
+@bot.hybrid_command(name="status", with_app_command=True, description="Shows status")
 async def status(ctx):
     current_time = datetime.now()
     timestr = 'Uptime:\t{}\n'.format(current_time.replace(
@@ -540,9 +549,11 @@ async def trigger(ctx):
         div_by_zero = 1/0
         pass
     except Exception as e:
-        embed_stacktrace = discord.Embed(title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
+        embed_stacktrace = discord.Embed(
+            title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
         #embed_stacktrace.add_field(name='Traceback', value="Traceback")
-        dfile = discord.File("../misc/this_is_fine.png", filename="this_is_fine.png")
+        dfile = discord.File("../misc/this_is_fine.png",
+                             filename="this_is_fine.png")
         embed_stacktrace.set_image(url="attachment://this_is_fine.png")
         embed_stacktrace.description = traceback.format_exc()
         embed_stacktrace.timestamp = datetime.utcnow()
@@ -575,12 +586,12 @@ async def garbage(ctx):
     await ctx.send(embed=embed_crash)
 
 
-@bot.command(name='ai', help='generate image with AI', aliases=['deformai']) 
+@bot.command(name='ai', help='generate image with AI', aliases=['deformai'])
 async def ai(ctx):
     return
 
 
-@bot.hybrid_command(name='help', with_app_command = True, help='Shows usage info', description='Shows usage info', aliases=['h', 'info', 'usage'])
+@bot.hybrid_command(name='help', with_app_command=True, help='Shows usage info', description='Shows usage info', aliases=['h', 'info', 'usage'])
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
     helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  shepard's distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
@@ -626,8 +637,9 @@ async def deform(ctx, *args):
                         await ctx.send(embed=embed_nofile_error)
                         return
             except (IndexError, TypeError):
-                #older_msgs = await ch.history(limit=10).flatten() # deprecated
-                older_msgs = [m async for m in ch.history(limit=10)] # discord.py v2 method of handling this is list comprehension
+                # older_msgs = await ch.history(limit=10).flatten() # deprecated
+                # discord.py v2 method of handling this is list comprehension
+                older_msgs = [m async for m in ch.history(limit=10)]
                 # check if an older msg contains image
                 for omsg in older_msgs:
                     try:
@@ -640,7 +652,8 @@ async def deform(ctx, *args):
                             if isinstance(url, str) == False:
                                 # await ctx.send(embed=embed_nofile_error)
                                 # return
-                                raise TypeError("Embed didn't contain valid image link")
+                                raise TypeError(
+                                    "Embed didn't contain valid image link")
                             break
                     except (IndexError, TypeError):
                         if omsg == older_msgs[-1]:
@@ -690,27 +703,47 @@ async def deform(ctx, *args):
 
 # slash command deform
 @bot.tree.command(name="deform", description="Deform an image with optional parameters. For usage refer to /help")
-#@app_commands.describe(args='for argument usage refer to /help')
-@app_commands.describe(l='Seam carving factor',
-    s='Swirl',
-    n='Noise',
-    b='Blur',
-    c='Contrast',
-    o='Implode',
-    d="Shepard's distortion (IWD)",
-    w='Wave',
-    r='Rotate (clockwise)',
-    f='Flip (horizontal, vertical)',
-    a='Anaglyph (cyan-red 3D)',
-    i='Invert colors',
-    g='Grayscale colors',
-    u='Disable compression',
-    )
+# @app_commands.describe(args='for argument usage refer to /help')
+@app_commands.describe(file='Attach an image to deform',
+                       message='ID of a message containing an image',
+                       l='Seam carving factor',
+                       s='Swirl',
+                       n='Noise',
+                       b='Blur',
+                       c='Contrast',
+                       o='Implode',
+                       d="Shepard's distortion (IWD)",
+                       w='Wave',
+                       r='Rotate (clockwise)',
+                       f='Flip (horizontal, vertical)',
+                       a='Anaglyph (cyan-red 3D)',
+                       i='Invert colors',
+                       g='Grayscale colors',
+                       u='Disable compression',
+                       )
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
-async def deform_slash(interaction: discord.Interaction, l: int=None, s: int=None, n: int=None, b: int=None, c: int=None, o: int=None, d: int=None, w: int=None, r: int=None, f: discord.app_commands.Choice[str]=None, a: bool=False, i: bool=False, g: bool=False, u: bool=False):
-    test_ = locals()
-    args = ()
-    await interaction.response.send_message(str(test_))
+async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message: int = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
+                       f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
+    args_dict = locals()
+    args_dict.pop('interaction', None)  # remove interaction object
+    args = []
+    for a in args_dict:
+        if args_dict[a]:
+            if isinstance(args_dict[a], discord.app_commands.Choice):
+                args.append(str(args_dict[a].value))
+            else:
+                args.append(str(a) + str(args_dict[a]))
+
+    # remove 'True' string literal from boolean arguments
+    args = [x.replace('True', '') for x in args]
+    args = tuple(args)
+
+    msg = message  # interactions aren't handled via a message. Therefore msg is a message ID integer.
+    
+    # Optional[Union[abc.GuildChannel, PartialMessageable, Thread]]
+    ch = interaction.channel
+
+    await interaction.response.send_message(str(args_dict))
 
 
 # deform via context menu
@@ -753,7 +786,7 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                         with open(os.path.join("raw", image_name), 'wb') as out_file:
                             if DEBUG:
                                 print("───────────" +
-                                        image_name + "───────────")
+                                      image_name + "───────────")
                                 print("saving image: " + image_name)
                             shutil.copyfileobj(r.raw, out_file)
                             out_file.flush()
@@ -828,7 +861,8 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                                     out_file.flush()
 
                                     # unfortunately await can't be used here
-                                    distorted_file = distort_image(image_name, ())
+                                    distorted_file = distort_image(
+                                        image_name, ())
 
                                     if DEBUG:
                                         print("distorted image: " + image_name)
@@ -875,7 +909,7 @@ async def check_mentions(api, s_id):
                     mentions.append(t)
             except (tweepy.TweepyException, tweepy.HTTPException) as e:
                 print("[Error] TweepyException: " +
-                    str(e) + ". StatusID: " + str(twJson))
+                      str(e) + ". StatusID: " + str(twJson))
                 tweet_json.remove(twJson)
 
         for tweet in mentions:
@@ -890,7 +924,8 @@ async def check_mentions(api, s_id):
 
             # increment number of interactions from this user
             if tweet.id not in tweet_json:  # only increment when tweet isn't overflowing
-                user_json[tweet.user.screen_name] = (min(int(user_json[tweet.user.screen_name])+1, MAX_INTERACTIONS*2)) if (tweet.user.screen_name in user_json) else 1
+                user_json[tweet.user.screen_name] = (min(int(
+                    user_json[tweet.user.screen_name])+1, MAX_INTERACTIONS*2)) if (tweet.user.screen_name in user_json) else 1
 
             if hasattr(tweet, 'text'):
                 tweet_txt = tweet.text.lower()
@@ -903,6 +938,8 @@ async def check_mentions(api, s_id):
 
             # convert tweet text to ascii: !!warning: §,ß(ss) are removed too
             tweet_txt = tweet_txt.encode("ascii", errors="ignore").decode()
+            # remove \n from string for better debug output
+            tweet_txt = tweet_txt.replace("\n", "")
 
             # if user sent too many requests in the past minutes, db ignores
             try:
@@ -912,17 +949,18 @@ async def check_mentions(api, s_id):
                         tweet_json.append(tweet.id)
                         if DEBUG:
                             print("[ERROR] overflowing tweet from " + tweet.user.screen_name +
-                                ": '" + tweet_txt + "', status_id: " + str(tweet.id))
+                                  ": '" + tweet_txt + "', status_id: " + str(tweet.id))
                     continue
                 else:  # request will be processed -> if tweet.id is in queued requests it can be removed
                     if tweet.id in tweet_json:
                         tweet_json.remove(tweet.id)
                         # now we must incr user_json otherwise overflowing tweets could spam the api
-                        user_json[tweet.user.screen_name] = (int(user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
+                        user_json[tweet.user.screen_name] = (int(
+                            user_json[tweet.user.screen_name])+1) if (tweet.user.screen_name in user_json) else 1
             except KeyError as ke:
                 # somehow this can be buggy and users are not written to user_json => investigate futher
                 user_json[tweet.user.screen_name] = 1
-                print("[ERROR] keyerror occured: "+ str(ke))
+                print("[ERROR] keyerror occured: " + str(ke))
                 continue
 
             # original status (if 'tweet' is a reply)
@@ -937,7 +975,7 @@ async def check_mentions(api, s_id):
                 tw_entities = tweet.entities
             if 'media' in tw_entities:  # tweet that mentionions db contains image
                 raw_image = tw_entities.get('media', [])
-                if(len(raw_image) > 0):
+                if (len(raw_image) > 0):
                     twitter_media_url = raw_image[0]['media_url']
                 else:
                     twitter_media_url = "[ERROR] No url found"
@@ -953,7 +991,7 @@ async def check_mentions(api, s_id):
                         sensitive = (r_tweet.possibly_sensitive or sensitive)
                     if 'media' in r_tw_entities:  # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix but not tested
                         raw_image = r_tw_entities.get('media', [])
-                        if(len(raw_image) > 0):
+                        if (len(raw_image) > 0):
                             twitter_media_url = raw_image[0]['media_url']
                         else:
                             twitter_media_url = "[ERROR] No url found"
@@ -1013,7 +1051,8 @@ async def check_mentions(api, s_id):
                             result_img = api.media_upload(
                                 os.path.join("results", image_name))
                             if DEBUG:
-                                api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                                api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id,
+                                                  auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
                                 continue
                             api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
                                               possibly_sensitive=sensitive, media_ids=[result_img.media_id])
@@ -1037,19 +1076,21 @@ async def check_mentions(api, s_id):
 
 async def check_followers(api, follower_list):
     """checks and processes followers in v1.1 api
-    
+
     Important
     ------
         this function is heavily rate-limited and can only be called once a minute!
     """
     try:
-        followers = api.get_followers(user_id=1525511476391428096, count=5, skip_status=True)
+        followers = api.get_followers(
+            user_id=int(USER_ID), count=5, skip_status=True)
         if followers == follower_list:
-            return followers # if latest followers didnt change, we can return
+            return followers  # if latest followers didnt change, we can return
         avatars = []
         async with lock:
             for follower in followers:
-                avatar_url = follower.profile_image_url_https.replace("_normal.jpg", ".jpg")#"_bigger.jpg")
+                avatar_url = follower.profile_image_url_https.replace(
+                    "_normal.jpg", ".jpg")  # "_bigger.jpg")
                 r = requests.get(avatar_url, stream=True)
                 image_name = str(follower.id) + '.jpg'
 
@@ -1061,7 +1102,7 @@ async def check_followers(api, follower_list):
             # construct banner image
             banner = Image.open("../misc/DeformBot_banner.png", 'r')
             bn_w, bn_h = banner.size
-            offset = (470, 350)#(513, 375)
+            offset = (470, 350)  # (513, 375)
 
             for avatar in avatars:
                 img = Image.open(os.path.join("raw", avatar), 'r')
