@@ -705,7 +705,7 @@ async def deform(ctx, *args):
 @bot.tree.command(name="deform", description="Deform an image with optional parameters. For usage refer to /help")
 # @app_commands.describe(args='for argument usage refer to /help')
 @app_commands.describe(file='Attach an image to deform',
-                       message='ID of a message containing an image',
+                       messageID='ID of a message containing an image',
                        l='Seam carving factor',
                        s='Swirl',
                        n='Noise',
@@ -722,9 +722,9 @@ async def deform(ctx, *args):
                        u='Disable compression',
                        )
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
-async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message: discord.Message = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
+async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, messageID: int = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
-    args_dict = locals()
+    args_dict = locals() # this has to be the fist call in the function
     args_dict.pop('interaction', None)  # remove interaction object
     args = []
     for a in args_dict:
@@ -738,13 +738,104 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
     args = [x.replace('True', '') for x in args]
     args = tuple(args)
 
-    msg = message  # interactions aren't handled via a message. Therefore msg is a message ID integer.
-    if (not file) and msg:
-        pass
     # Optional[Union[abc.GuildChannel, PartialMessageable, Thread]]
     ch = interaction.channel
+    msg = messageID  # interactions aren't handled via a message. Therefore msg is a message ID integer.
+    if (not file) and messageID:
+        msg = await ch.fetch_message(msg)
 
-    await interaction.response.send_message(str(args_dict))
+    global arg_error_flag
+    async with lock:
+        reply_msg = None  # there cannot be a reply_msg with slash commads at the moment
+        url = ""
+        async with ch.typing():
+            arg_error_flag = False
+            # first delete the existing files
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+
+            try:
+                if file:  # file is passed to call
+                    url = file.url
+                elif messageID: # msgID is passed to call -> msg object available
+                    # check for embeds first
+                    if len(msg.embeds) <= 0:  # no embeds
+                        url = msg.attachments[0].url
+                    else:
+                        url = msg.embeds[0].image.url
+                        if isinstance(url, str) == False:
+                            await interaction.response.send_message(embed=embed_nofile_error)
+                            return
+                else:
+                    raise IndexError("No file or msgID given")
+            except (IndexError, TypeError):
+                # older_msgs = await ch.history(limit=10).flatten() # deprecated
+                # discord.py v2 method of handling this is list comprehension
+                older_msgs = [m async for m in ch.history(limit=10)]
+                # check if an older msg contains image
+                for omsg in older_msgs:
+                    try:
+                        if len(omsg.embeds) <= 0:  # no embeds
+                            url = omsg.attachments[0].url
+                            break
+                        else:
+                            url = omsg.embeds[0].image.url
+                            if isinstance(url, str) == False:
+                                # await ctx.send(embed=embed_nofile_error)
+                                # return
+                                raise TypeError(
+                                    "Embed didn't contain valid image link")
+                            break
+                    except (IndexError, TypeError):
+                        if omsg == older_msgs[-1]:
+                            await interaction.response.send_message(embed=embed_nofile_error)
+                            return
+                        else:
+                            continue
+                # we land here on success
+
+            if url[0:26] == "https://cdn.discordapp.com":
+                if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
+                    r = requests.get(url, stream=True)
+                    image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
+
+                    with open(os.path.join("raw", image_name), 'wb') as out_file:
+                        if DEBUG:
+                            print("───────────" + image_name + "───────────")
+                            print("saving image: " + image_name)
+                        shutil.copyfileobj(r.raw, out_file)
+                        # flush the buffer, this fixes ReadException
+                        out_file.flush()
+
+                        await interaction.response.defer()
+                        # distort the file
+                        distorted_file = distort_image(image_name, args)
+
+                        if arg_error_flag:
+                            await ctx.send(embed=argument_error)
+
+                        if DEBUG:
+                            print("distorted image: " + image_name)
+                            print(
+                                "──────────────────────────────────────────────────────────────")
+                        # send distorted image
+                        if DEBUG:
+                            await interaction.followup.send("image ID: " + image_name.replace(".jpg", ""), file=distorted_file)
+                            return
+                        await interaction.followup.send(file=distorted_file)
+                        return
+                else:
+                    await interaction.response.send_message(embed=embed_wrongfile_error)
+                    return
+            else:
+                # handle non-discord url
+                await interaction.response.send_message(embed=embed_unsafeurl_error)
+                return
 
 
 # deform via context menu

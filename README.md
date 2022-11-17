@@ -83,12 +83,11 @@ To use command arguments simply append them after the mention.\
 - fix reply to sensitive image not being sensitive on twitter
 - fix twitter functions blocking shard heartbeat
 - deform multiple images on twitter
+- .PNG support
 
 # Known Bugs
-- [FIXED] `§d i s60` causes a big black circle to appear.
-- [FIXED] `§d i o60` same bug as above, appears to happen with processing of circular effects
-- invalid argument embed is bugged
-- invalid arg error on discord refers to twitter
+- invalid argument error embed on discord refers to twitter
+- pictures with alpha channel can be buggy sometimes
 
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea
