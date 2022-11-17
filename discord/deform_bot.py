@@ -705,7 +705,7 @@ async def deform(ctx, *args):
 @bot.tree.command(name="deform", description="Deform an image with optional parameters. For usage refer to /help")
 # @app_commands.describe(args='for argument usage refer to /help')
 @app_commands.describe(file='Attach an image to deform',
-                       messageID='ID of a message containing an image',
+                       message_id='ID of a message containing an image',
                        l='Seam carving factor',
                        s='Swirl',
                        n='Noise',
@@ -722,7 +722,7 @@ async def deform(ctx, *args):
                        u='Disable compression',
                        )
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
-async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, messageID: int = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
+async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: int = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
     args_dict = locals() # this has to be the fist call in the function
     args_dict.pop('interaction', None)  # remove interaction object
@@ -740,8 +740,8 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
 
     # Optional[Union[abc.GuildChannel, PartialMessageable, Thread]]
     ch = interaction.channel
-    msg = messageID  # interactions aren't handled via a message. Therefore msg is a message ID integer.
-    if (not file) and messageID:
+    msg = message_id  # interactions aren't handled via a message. Therefore msg is a message ID integer.
+    if (not file) and message_id:
         msg = await ch.fetch_message(msg)
 
     global arg_error_flag
@@ -762,7 +762,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
             try:
                 if file:  # file is passed to call
                     url = file.url
-                elif messageID: # msgID is passed to call -> msg object available
+                elif message_id: # msgID is passed to call -> msg object available
                     # check for embeds first
                     if len(msg.embeds) <= 0:  # no embeds
                         url = msg.attachments[0].url
