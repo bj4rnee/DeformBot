@@ -743,7 +743,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
 
     try:
         msg = int(message_id)  # interactions aren't handled via a message. Therefore msg is a message ID integer.
-    except (ValueError):
+    except (ValueError, TypeError):
         msg = None
     if (not file) and msg:
         msg = await ch.fetch_message(msg)
