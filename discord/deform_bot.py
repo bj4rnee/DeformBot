@@ -80,7 +80,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.4.5_dev"
+VERSION = "1.5_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -817,7 +817,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                         distorted_file = distort_image(image_name, args)
 
                         if arg_error_flag:
-                            await ctx.send(embed=argument_error)
+                            await interaction.response.send_message(embed=argument_error)
 
                         if DEBUG:
                             print("distorted image: " + image_name)
