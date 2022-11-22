@@ -88,6 +88,8 @@ To use command arguments simply append them after the mention.\
 # Known Bugs
 - invalid argument error embed on discord refers to twitter
 - pictures with alpha channel can be buggy sometimes
+- blur argument must be placed before noise
+- the output of a slash command can be flipped vertically
 
 # Credits
 [@rupansh](https://github.com/rupansh) for the idea

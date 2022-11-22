@@ -708,8 +708,8 @@ async def deform(ctx, *args):
                        message_id='ID of a message containing an image',
                        l='Seam carving factor',
                        s='Swirl',
-                       n='Noise',
                        b='Blur',
+                       n='Noise',
                        c='Contrast',
                        o='Implode',
                        d="Shepard's distortion (IWD)",
@@ -722,7 +722,7 @@ async def deform(ctx, *args):
                        u='Disable compression',
                        )
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
-async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, l: int = None, s: int = None, n: int = None, b: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
+async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, l: int = None, s: int = None, b: int = None, n: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
     args_dict = locals() # this has to be the fist call in the function
     args_dict.pop('interaction', None)  # remove interaction object
@@ -1226,9 +1226,24 @@ async def twitter_bot_loop():
     global since_id
     global latest_followers
     global user_json
+    
     # execute this every 75 seconds
-    since_id = await check_mentions(api, since_id)
-    latest_followers = await check_followers(api, latest_followers)
+    try:
+        since_id = await check_mentions(api, since_id)
+    # random Runtime and NameErrors can occur in these async functions that cannot be handled otherwise atm
+    # RtE's occur due to currently unknown reasons in asyncio locking
+    # NE's occur when asyncio tries to log after 'open' has been deleted by gc before fileHandler could use it
+    # this is fixed in 3.10 but the bot currently runs on 3.8 as of 11.2022
+    # for more info see https://stackoverflow.com/questions/64679139/
+    except (RuntimeError, NameError) as e:
+        # don't change since_id
+        print("[Error] Exception in 'check_mentions' in integral background task 'twitter_bot_loop': "+ str(e))
+    
+    try:
+        latest_followers = await check_followers(api, latest_followers)
+    except (RuntimeError, NameError) as e:
+        print("[Error] Exception in 'check_followers' in integral background task 'twitter_bot_loop': "+ str(e))
+
     # then dump updated user json to file
     try:
         with open('user_interact.json', 'w') as f:
