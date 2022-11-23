@@ -68,6 +68,7 @@ import tweepy
 import logging
 import json
 import itertools
+import atexit
 from numpy import interp
 from datetime import datetime, timedelta
 import discord
@@ -80,7 +81,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.5.1_dev"
+VERSION = "1.5.2_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -221,6 +222,17 @@ async def wait():  # aquire the lock
 async def signal():  # free the lock
     bot.mutex = True
     return bot.mutex
+
+
+# testing with explicitly releasing resources before program exit
+async def exit_handler():
+    if twitter_bot_loop.is_running():
+        twitter_bot_loop.stop()
+    if decr_interactions_loop.is_running():
+        decr_interactions_loop.stop()
+    await bot.close()
+
+atexit.register(exit_handler)
 
 
 # args: seam-carving, noise, blur, contrast, swirl, implode, distort (conventional), invert, disable compression, grayscale
