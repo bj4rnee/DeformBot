@@ -101,6 +101,7 @@ ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN_MANAGE')
 USER_ID = os.getenv('DB_USER_ID')
 since_id = int(os.getenv('last_id'))
+num_processed = 0 # number of total processed images since last reboot
 latest_followers = []
 user_json = {}
 tweet_json = []  # keep in mind this is a list and not a dict
@@ -199,7 +200,7 @@ embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
                                  icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
 argument_error = discord.Embed(
-    description="Invalid argument: " + ".\nFor argument usage refer to `§help`", color=0xFF5555)
+    description="Invalid argument: " + ".\nFor argument usage refer to `§help` or `/help`", color=0xFF5555)
 argument_error.set_author(name="[Error]", url="https://github.com/bj4rnee/DeformBot#command-arguments",
                           icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
@@ -225,12 +226,11 @@ async def signal():  # free the lock
 
 
 # testing with explicitly releasing resources before program exit
-async def exit_handler():
+def exit_handler():
     if twitter_bot_loop.is_running():
         twitter_bot_loop.stop()
     if decr_interactions_loop.is_running():
         decr_interactions_loop.stop()
-    await bot.close()
 
 atexit.register(exit_handler)
 
@@ -244,6 +244,7 @@ def distort_image(fname, args, png: bool=False):
     """function to distort an image using the magick library"""
     global arg_error_flag  # True if invalid arg is detected
     global argument_error
+    global num_processed
     invalid_args_list = []
     arg_count = 0
     anaglyph = False
@@ -283,7 +284,7 @@ def distort_image(fname, args, png: bool=False):
             arg_error_flag = True
             invalid_args_list.append(e)
             argument_error.description = "Invalid argument(s): " + str(
-                invalid_args_list) + ".\nFor argument usage refer to `§help`"
+                invalid_args_list) + ".\nFor argument usage refer to `§help` or `/help`"
             break
         # note: with heavy noise sc has to run before the image is noisified or it will fail!!
         # ! sc is now applied above !
@@ -450,7 +451,7 @@ def distort_image(fname, args, png: bool=False):
             continue
         invalid_args_list.append(e)
         argument_error.description = "Invalid argument(s): " + \
-            str(invalid_args_list) + ".\nFor argument usage refer to `§help`"
+            str(invalid_args_list) + ".\nFor argument usage refer to `§help` or `/help`"
         arg_error_flag = True
         if DEBUG:
             print("[ERROR]: invalid argument '" + e + "'")
@@ -478,6 +479,8 @@ def distort_image(fname, args, png: bool=False):
     filetype = "JPEG" if fname.endswith(".jpg") else "PNG"
     image.save(buf, filetype)
     image.close()
+
+    num_processed += 1
 
     # backup file to /db_outputs
     bkp_path = OUTPUT_PATH
@@ -520,7 +523,7 @@ async def on_ready():
         print("starting DeformBot " + VERSION + " ...")
         print(f'{bot.user} has connected to Discord!')
     await bot.wait_until_ready()
-    await bot.change_presence(activity=discord.Game(name="§help"))
+    await bot.change_presence(activity=discord.Game(name="§help | /help"))
     # sync interaction tree (used for applications like slash cmds)
     await bot.tree.sync()
     # Create API object
@@ -550,7 +553,8 @@ async def status(ctx):
     memstr = 'Memory:\t' + \
         str(round(process.memory_info().rss / 1024 ** 2, 2)) + 'MB\n'
     response = "```[Debug]\n" + timestr + \
-        memstr + "Vers..:\t" + VERSION + "```"
+        memstr + "Vers..:\t" + VERSION + \
+        "\nNumPrc:\t" + str(num_processed) + "```"
     await ctx.send(response)
 
 
