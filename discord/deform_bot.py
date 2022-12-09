@@ -550,11 +550,12 @@ async def status(ctx):
     current_time = datetime.now()
     timestr = 'Uptime:\t{}\n'.format(current_time.replace(
         microsecond=0) - start_time.replace(microsecond=0))
+    hours = math.ceil((current_time.replace(microsecond=0) - start_time.replace(microsecond=0)).seconds / 3600)
     memstr = 'Memory:\t' + \
         str(round(process.memory_info().rss / 1024 ** 2, 2)) + 'MB\n'
     response = "```[Debug]\n" + timestr + \
         memstr + "Vers..:\t" + VERSION + \
-        "\nNumPrc:\t" + str(num_processed) + "```"
+        "\nNumPrc:\t" + str(num_processed) +" ({}/h)".format(round(num_processed / hours, 2)) + "```"
     await ctx.send(response)
 
 
