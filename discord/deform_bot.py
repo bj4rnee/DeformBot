@@ -101,7 +101,7 @@ ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN_MANAGE')
 USER_ID = os.getenv('DB_USER_ID')
 since_id = int(os.getenv('last_id'))
-num_processed = 0 # number of total processed images since last reboot
+num_processed = 0  # number of total processed images since last reboot
 latest_followers = []
 user_json = {}
 tweet_json = []  # keep in mind this is a list and not a dict
@@ -232,6 +232,7 @@ def exit_handler():
     if decr_interactions_loop.is_running():
         decr_interactions_loop.stop()
 
+
 atexit.register(exit_handler)
 
 
@@ -240,7 +241,7 @@ atexit.register(exit_handler)
 # defaults values if flag is not set or otherwise specified
 # note that the default input for 'l' is 43 but it's interpolated to l=60
 # TODO better blur!
-def distort_image(fname, args, png: bool=False):
+def distort_image(fname, args, png: bool = False):
     """function to distort an image using the magick library"""
     global arg_error_flag  # True if invalid arg is detected
     global argument_error
@@ -451,7 +452,8 @@ def distort_image(fname, args, png: bool=False):
             continue
         invalid_args_list.append(e)
         argument_error.description = "Invalid argument(s): " + \
-            str(invalid_args_list) + ".\nFor argument usage refer to `§help` or `/help`"
+            str(invalid_args_list) + \
+            ".\nFor argument usage refer to `§help` or `/help`"
         arg_error_flag = True
         if DEBUG:
             print("[ERROR]: invalid argument '" + e + "'")
@@ -550,12 +552,14 @@ async def status(ctx):
     current_time = datetime.now()
     timestr = 'Uptime:\t{}\n'.format(current_time.replace(
         microsecond=0) - start_time.replace(microsecond=0))
-    hours = math.ceil((current_time.replace(microsecond=0) - start_time.replace(microsecond=0)).seconds / 3600)
+    hours = math.ceil((current_time.replace(microsecond=0) -
+                      start_time.replace(microsecond=0)).total_seconds() / 3600)
     memstr = 'Memory:\t' + \
         str(round(process.memory_info().rss / 1024 ** 2, 2)) + 'MB\n'
     response = "```[Debug]\n" + timestr + \
         memstr + "Vers..:\t" + VERSION + \
-        "\nNumPrc:\t" + str(num_processed) +" ({}/h)".format(round(num_processed / hours, 2)) + "```"
+        "\nNumPrc:\t" + str(num_processed) + \
+        " ({}/h)".format(round(num_processed / hours, 2)) + "```"
     await ctx.send(response)
 
 
@@ -741,7 +745,7 @@ async def deform(ctx, *args):
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
 async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, l: int = None, s: int = None, b: int = None, n: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
-    args_dict = locals() # this has to be the fist call in the function
+    args_dict = locals()  # this has to be the fist call in the function
     args_dict.pop('interaction', None)  # remove interaction object
     args = []
     for a in args_dict:
@@ -759,7 +763,8 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
     ch = interaction.channel
 
     try:
-        msg = int(message_id)  # interactions aren't handled via a message. Therefore msg is a message ID integer.
+        # interactions aren't handled via a message. Therefore msg is a message ID integer.
+        msg = int(message_id)
     except (ValueError, TypeError):
         msg = None
     if (not file) and msg:
@@ -783,7 +788,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
             try:
                 if file:  # file is passed to call
                     url = file.url
-                elif msg: # msgID is passed to call and is valid int -> msg object available
+                elif msg:  # msgID is passed to call and is valid int -> msg object available
                     # check for embeds first
                     if len(msg.embeds) <= 0:  # no embeds
                         url = msg.attachments[0].url
@@ -1243,7 +1248,7 @@ async def twitter_bot_loop():
     global since_id
     global latest_followers
     global user_json
-    
+
     # execute this every 75 seconds
     try:
         since_id = await check_mentions(api, since_id)
@@ -1254,12 +1259,12 @@ async def twitter_bot_loop():
     # for more info see https://stackoverflow.com/questions/64679139/
     except (RuntimeError, NameError) as e:
         # don't change since_id
-        print("[Error] Exception in 'check_mentions' in integral background task 'twitter_bot_loop': "+ str(e))
-    
+        print("[Error] Exception in 'check_mentions' in integral background task 'twitter_bot_loop': " + str(e))
+
     try:
         latest_followers = await check_followers(api, latest_followers)
     except (RuntimeError, NameError) as e:
-        print("[Error] Exception in 'check_followers' in integral background task 'twitter_bot_loop': "+ str(e))
+        print("[Error] Exception in 'check_followers' in integral background task 'twitter_bot_loop': " + str(e))
 
     # then dump updated user json to file
     try:
