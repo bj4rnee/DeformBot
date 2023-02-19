@@ -1174,22 +1174,23 @@ async def check_mentions(api, s_id):
                                 # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
                                 result_img = api.media_upload(os.path.join("results", image_name))
                                 result_image_ids.append(result_img.media_id)
-                            if DEBUG:
-                                api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id,
-                                                  auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=result_image_ids)
-                                continue
-                            api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
-                                              possibly_sensitive=sensitive, media_ids=result_image_ids)
+                        else:
+                            api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg', '.png' and '.gif' are supported at the moment.",
+                                            in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                             continue
                     else:
-                        api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg', '.png' and '.gif' are supported at the moment.",
-                                          in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                        # unsafe url
+                        api.update_status(status="[ERROR] Unsafe url detected. Only images hosted on Twitter are supported at the moment.",
+                                        in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                         continue
-                else:
-                    # unsafe url
-                    api.update_status(status="[ERROR] Unsafe url detected. Only images hosted on Twitter are supported at the moment.",
-                                      in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                if DEBUG:
+                    api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id,
+                                        auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=result_image_ids)
                     continue
+                api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
+                                    possibly_sensitive=sensitive, media_ids=result_image_ids)
+                continue
+                    
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException in check_mentions: " + str(e))
 
