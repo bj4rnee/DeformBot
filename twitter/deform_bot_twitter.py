@@ -60,7 +60,7 @@ def check_mentions(api, s_id):
     for tweet in tweepy.Cursor(api.mentions_timeline, since_id=s_id, count=100, tweet_mode='extended').items():
         new_since_id = max(tweet.id, new_since_id)
         #os.environ['last_id'] = str(new_since_id)
-        set_key("../discord/.env", 'last_id', str(new_since_id))
+        #set_key("../discord/.env", 'last_id', str(new_since_id))
         if hasattr(tweet, 'text'):
             tweet_txt = tweet.text.lower()
         else:
@@ -93,17 +93,17 @@ def check_mentions(api, s_id):
                         twitter_media_url = "[ERROR] No url found"
                     print(twitter_media_url)
                 else:
-                    api.update_status(status="[ERROR] no media found.", in_reply_to_status_id=tweet.id,
-                                      auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                    print(f"""api.update_status(status="[ERROR] no media found.", in_reply_to_status_id={str(tweet.id)},
+                                      auto_populate_reply_metadata={str(True)}, possibly_sensitive={str(sensitive)})""")
                     continue
             else:
                 continue
 
         # result_img = api.media_upload("created_image.png") # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
 
-        api.update_status(status="[DEBUG] fetching image...", in_reply_to_status_id=tweet.id,
-                          auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
-        #api.update_status('@' + tweet.user.screen_name + " Here's your Quote", tweet.id, media_ids=[result_img.media_id])
+        print(f"""api.update_status(status="[DEBUG] fetching image...", in_reply_to_status_id={str(tweet.id)},
+                          auto_populate_reply_metadata={str(True)}, possibly_sensitive={str(sensitive)})""")
+        #api.update_status('@' + tweet.user.screen_name + " Here's your image", tweet.id, media_ids=[result_img.media_id])
     return new_since_id
 
 
@@ -128,5 +128,5 @@ def check_mentions_v2(s_id):
 while True:
     since_id = check_mentions(api, since_id)
     #since_id = check_mentions_v2(since_id)
-    time.sleep(60)
+    time.sleep(80)
     break
