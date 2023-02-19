@@ -82,7 +82,7 @@ To use command arguments simply append them after the mention.\
 - search for last image on command if nothing else is found [beta]
 - fix reply to sensitive image not being sensitive on twitter
 - fix twitter functions blocking shard heartbeat
-- deform multiple images on twitter
+- deform multiple images on twitter [beta]
 - .PNG support
 
 # Known Bugs

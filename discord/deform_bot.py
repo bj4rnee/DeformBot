@@ -81,7 +81,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.5.2_dev"
+VERSION = "1.5.3_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -1013,7 +1013,7 @@ async def check_mentions(api, s_id):
 
     # Retrieving mentions
     new_since_id = s_id
-    twitter_media_url = ""
+    twitter_media_url = [] # list of tweet media url(s)
     mentions = []
 
     try:
@@ -1095,11 +1095,11 @@ async def check_mentions(api, s_id):
             else:
                 tw_entities = tweet.entities
             if 'media' in tw_entities:  # tweet that mentionions db contains image
-                raw_image = tw_entities.get('media', [])
-                if (len(raw_image) > 0):
-                    twitter_media_url = raw_image[0]['media_url']
+                raw_images_links = [d['media_url'] for d in tw_entities.get('media', [])]
+                if (len(raw_images_links) > 0):
+                    twitter_media_url = raw_images_links
                 else:
-                    twitter_media_url = "[ERROR] No url found"
+                    twitter_media_url = ["[ERROR] No URL found",]
             else:  # tweet that the mentioner replies to contains image
                 if isinstance(reply_og_id, str) or isinstance(reply_og_id, int):
                     r_tweet = api.get_status(
@@ -1111,11 +1111,11 @@ async def check_mentions(api, s_id):
                     if hasattr(r_tweet, 'possibly_sensitive'):
                         sensitive = (r_tweet.possibly_sensitive or sensitive)
                     if 'media' in r_tw_entities:  # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix but not tested
-                        raw_image = r_tw_entities.get('media', [])
-                        if (len(raw_image) > 0):
-                            twitter_media_url = raw_image[0]['media_url']
+                        raw_images_links = [d['media_url'] for d in r_tw_entities.get('media', [])]
+                        if (len(raw_images_links) > 0):
+                            twitter_media_url = raw_images_links
                         else:
-                            twitter_media_url = "[ERROR] No url found"
+                            twitter_media_url = ["[ERROR] No URL found",]
                     else:  # TODO fix bot responding with error to tweets not trying to send a command -> attempted fix but not tested
                         # dont reply with error to our own tweets
                         if not (r_tweet.in_reply_to_user_id_str == "DeformBot"):
@@ -1130,6 +1130,8 @@ async def check_mentions(api, s_id):
             async with lock:  # from here proceed with lock!
                 # clear arg error flag
                 arg_error_flag = False
+
+                result_image_ids = []
                 # first delete the existing files
                 for delf in os.listdir("raw"):
                     if delf.endswith(".jpg"):
@@ -1138,45 +1140,46 @@ async def check_mentions(api, s_id):
                     if delf2.endswith(".jpg"):
                         os.remove(os.path.join("results", delf2))
 
-                # fetch and process the image
-                if twitter_media_url[0:26] == "http://pbs.twimg.com/media":
-                    if twitter_media_url[-4:].casefold() == ".jpg".casefold() or twitter_media_url[-4:].casefold() == ".png".casefold() or twitter_media_url[-5:].casefold() == ".jpeg".casefold() or twitter_media_url[-4:].casefold() == ".gif".casefold():
-                        r = requests.get(twitter_media_url, stream=True)
-                        image_name = str(uuid.uuid4()) + \
-                            '.jpg'  # generate uuid
+                # fetch and process the image(s)
+                for m_url in twitter_media_url:
+                    if m_url[0:26] == "http://pbs.twimg.com/media":
+                        if m_url[-4:].casefold() == ".jpg".casefold() or m_url[-4:].casefold() == ".png".casefold() or m_url[-5:].casefold() == ".jpeg".casefold() or m_url[-4:].casefold() == ".gif".casefold():
+                            r = requests.get(m_url, stream=True)
+                            image_name = str(uuid.uuid4()) + \
+                                '.jpg'  # generate uuid
 
-                        with open(os.path.join("raw", image_name), 'wb') as out_file:
-                            if DEBUG:
-                                print("───────────" +
-                                      image_name + "───────────")
-                                print("saving image: " + image_name)
-                            shutil.copyfileobj(r.raw, out_file)
-                            out_file.flush()
-                            # remove mention and links from args. Alternatively '/' can be used instead of '.'
-                            args = tuple(
-                                [x for x in tweet_txt.split() if all(y not in x for y in '@.')])
-                            # distort the file
-                            distort_image(image_name, args)
+                            with open(os.path.join("raw", image_name), 'wb') as out_file:
+                                if DEBUG:
+                                    print("───────────" +
+                                        image_name + "───────────")
+                                    print("saving image: " + image_name)
+                                shutil.copyfileobj(r.raw, out_file)
+                                out_file.flush()
+                                # remove mention and links from args. Alternatively '/' can be used instead of '.'
+                                args = tuple(
+                                    [x for x in tweet_txt.split() if all(y not in x for y in '@.')])
+                                # distort the file
+                                distort_image(image_name, args)
 
-                            if arg_error_flag:
-                                arg_error_flag = False
-                                # we're not sending massive amounts of error msgs to twitter
-                                print("[Twitter] argument error flag was true")
+                                if arg_error_flag:
+                                    arg_error_flag = False
+                                    # we're not sending massive amounts of error msgs to twitter
+                                    print("[Twitter] argument error flag was true")
 
-                            if DEBUG:
-                                print("distorted image: " + image_name)
-                                print(
-                                    "──────────────────────────────────────────────────────────────")
-                            # send distorted image
-                            # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
-                            result_img = api.media_upload(
-                                os.path.join("results", image_name))
+                                if DEBUG:
+                                    print("distorted image: " + image_name)
+                                    print(
+                                        "──────────────────────────────────────────────────────────────")
+                                # send distorted image
+                                # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
+                                result_img = api.media_upload(os.path.join("results", image_name))
+                                result_image_ids = result_image_ids.append(result_img.media_id)
                             if DEBUG:
                                 api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id,
-                                                  auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                                                  auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=result_image_ids)
                                 continue
                             api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
-                                              possibly_sensitive=sensitive, media_ids=[result_img.media_id])
+                                              possibly_sensitive=sensitive, media_ids=result_image_ids)
                             continue
                     else:
                         api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg', '.png' and '.gif' are supported at the moment.",
