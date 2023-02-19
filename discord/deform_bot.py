@@ -1173,7 +1173,7 @@ async def check_mentions(api, s_id):
                                 # send distorted image
                                 # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
                                 result_img = api.media_upload(os.path.join("results", image_name))
-                                result_image_ids = result_image_ids.append(result_img.media_id)
+                                result_image_ids.append(result_img.media_id)
                             if DEBUG:
                                 api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id,
                                                   auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=result_image_ids)
