@@ -1131,6 +1131,9 @@ async def check_mentions(api, s_id):
                 # clear arg error flag
                 arg_error_flag = False
 
+                # declare image_name to avoid UnboundLocalError
+                image_name = "image_id_error"
+
                 result_image_ids = []
                 # first delete the existing files
                 for delf in os.listdir("raw"):
