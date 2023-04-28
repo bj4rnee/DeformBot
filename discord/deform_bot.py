@@ -528,15 +528,15 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="§help | /help"))
     # sync interaction tree (used for applications like slash cmds)
     await bot.tree.sync()
-    # Create API object
-    try:
-        api.verify_credentials()
-    except Exception as e:
-        raise e
-    if DEBUG:
-        print("[Twitter] Authentication Successful!")
-        print("──────────────────────────────────────────────────────────────")
+
     if not DISABLE_TWITTER:
+        # verify api object
+        try:
+            api.verify_credentials()
+            if DEBUG:
+                print("[Twitter] Authentication Successful!")
+        except Exception as e:
+            raise e
         if not twitter_bot_loop.is_running():
             twitter_bot_loop.start()
         if not decr_interactions_loop.is_running():
@@ -544,6 +544,8 @@ async def on_ready():
         #print("[IMPORTANT] You shouldn't be seeing this message!")
     else:
         print("[Twitter] @DefomBot disabled.")
+    if DEBUG:
+        print("──────────────────────────────────────────────────────────────")
     # bot.remove_command('help')
 
 
