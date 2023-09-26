@@ -687,6 +687,7 @@ async def deform(ctx, *args):
                 # we land here on success
 
             if url[0:26] == "https://cdn.discordapp.com":
+                url = url.split('?')[0] # fix for discords new url params
                 if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                     r = requests.get(url, stream=True)
                     image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
@@ -828,6 +829,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                 # we land here on success
 
             if url[0:26] == "https://cdn.discordapp.com":
+                url = url.split('?')[0]
                 if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                     r = requests.get(url, stream=True)
                     image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
@@ -901,6 +903,7 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                 return
             else:
                 if url[0:26] == "https://cdn.discordapp.com":
+                    url = url.split('?')[0]
                     if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                         r = requests.get(url, stream=True)
                         image_name = str(uuid.uuid4()) + \
@@ -970,6 +973,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                         return
                     else:
                         if url[0:26] == "https://cdn.discordapp.com":
+                            url = url.split('?')[0]
                             if url[-4:].casefold() == ".jpg".casefold() or url[-4:].casefold() == ".png".casefold() or url[-5:].casefold() == ".jpeg".casefold() or url[-4:].casefold() == ".gif".casefold():
                                 r = requests.get(url, stream=True)
                                 image_name = str(uuid.uuid4()) + \
