@@ -144,7 +144,7 @@ COMMAND_PREFIX = ['§', '$']
 
 MAX_ARGS = 16  # maximum number of arguments the bot accepts
 OUTPUT_PATH = os.path.join("/home", "db_outputs")
-MAX_INTERACTIONS = 4
+MAX_INTERACTIONS = 3
 lock = asyncio.Lock()  # Doesn't require event loop
 tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
@@ -1152,6 +1152,7 @@ async def check_mentions(api, s_id):
                 # fetch and process the image(s)
                 for m_url in twitter_media_url:
                     if m_url[0:26] == "http://pbs.twimg.com/media":
+                        m_url = m_url.split('?')[0]
                         if m_url[-4:].casefold() == ".jpg".casefold() or m_url[-4:].casefold() == ".png".casefold() or m_url[-5:].casefold() == ".jpeg".casefold() or m_url[-4:].casefold() == ".gif".casefold():
                             r = requests.get(m_url, stream=True)
                             image_name = str(uuid.uuid4()) + \
