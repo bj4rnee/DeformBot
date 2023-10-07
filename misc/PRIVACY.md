@@ -38,4 +38,4 @@ Your privacy is very important to us. It is our policy to respect your privacy.
 
 ---
 
-*If you need any more information or help feel free to contact me at `klar@bjarne.dev` or preferably DM me on Discord at `bj4rne#3047`. Thanks for using DeformBot!*
+*If you need any more information or help feel free to contact me at `info[at]bjarne.dev` or preferably DM me on Discord at `bj4rne`. Thanks for using DeformBot!*
