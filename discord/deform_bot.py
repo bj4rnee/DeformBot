@@ -81,7 +81,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.5.3_dev"
+VERSION = "1.5.4_dev"
 # Turn off in production!
 DEBUG = True
 
@@ -143,7 +143,7 @@ except Exception as e:
 COMMAND_PREFIX = ['§', '$']
 
 MAX_ARGS = 16  # maximum number of arguments the bot accepts
-OUTPUT_PATH = os.path.join("/home", "db_outputs")
+OUTPUT_PATH = os.getenv("OUTPUT_PATH", os.path.join("/home", "db_outputs")) # fallback to /home/db_outputs
 MAX_INTERACTIONS = 3
 lock = asyncio.Lock()  # Doesn't require event loop
 tracker = SummaryTracker()
@@ -160,23 +160,24 @@ intents.reactions = True
 intents.dm_reactions = True
 
 # this is a hack to log print to a file but keep stdout
-log_path = os.path.join("/home", "db_outputs", "db.log")
-if os.path.exists(OUTPUT_PATH):
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
-                        handlers=[
-                            logging.StreamHandler(),
-                            logging.FileHandler(log_path, "a"),
-                        ],)
-else:
-    print("[Error] Couldn't find logfile. Creating a new one in current dir ...")
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
-                        handlers=[
-                            logging.StreamHandler(),
-                            logging.FileHandler("db.log", "a"),
-                        ],)
-logger = logging.getLogger()
-logger.propagate = False
-print = logger.info
+if os.getenv('ENABLE_LOGGING').lower() == 'true':
+    log_path = os.path.join(OUTPUT_PATH, "db.log")
+    if os.path.exists(OUTPUT_PATH):
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
+                            handlers=[
+                                logging.StreamHandler(),
+                                logging.FileHandler(log_path, "a"),
+                            ],)
+    else:
+        print("[Error] Couldn't find logfile. Creating a new one in current dir ...")
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
+                            handlers=[
+                                logging.StreamHandler(),
+                                logging.FileHandler("db.log", "a"),
+                            ],)
+    logger = logging.getLogger()
+    logger.propagate = False
+    print = logger.info
 
 # UNFORTUNATELY THIS WORKS ONLY IN v1.1 API
 # Authenticate to Twitter
@@ -484,7 +485,7 @@ def distort_image(fname, args, png: bool = False):
 
     num_processed += 1
 
-    # backup file to /db_outputs
+    # backup file to specified output path
     bkp_path = OUTPUT_PATH
     if os.path.exists(bkp_path):
         if DEBUG:

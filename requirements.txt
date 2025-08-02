@@ -1,8 +1,8 @@
-discord.py==2.0.1
+discord.py==2.5.2
 python-dotenv
 pillow
 psutil
 requests
-numpy
+numpy==1.22.3
 pympler
-tweepy
+tweepy==4.9.0

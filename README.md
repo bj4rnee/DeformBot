@@ -73,6 +73,12 @@ To use command arguments simply append them after the mention.\
 `@DeformBot l50 s25 c+30 n70 g`\
 `@DeformBot l0 u` (this outputs the original image)
 
+# Self hosting
+If you want to self host deformbot, the most simple way is to use the docker image with docker compose.
+for this, you must place a `.env` file conatining the information specified in [.env.example](https://github.com/bj4rnee/DeformBot/blob/main/discord/.env.example) in the
+root folder of the repository (where the `.git` folder is).\
+After that is done just build the image with `docker compose up --build`.
+
 # Privacy policy
 [Here](https://github.com/bj4rnee/DeformBot/blob/main/misc/PRIVACY.md) you can check out DeformBot's privacy policy.
 
