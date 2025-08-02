@@ -547,6 +547,15 @@ async def on_ready():
     # bot.remove_command('help')
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        print(f"[Info] Unknown command received: {ctx.message.content}")
+        return
+    # let other errors bubble up
+    raise error
+
+
 @bot.hybrid_command(name="status", with_app_command=True, description="Shows status")
 async def status(ctx):
     current_time = datetime.now()
