@@ -109,34 +109,31 @@ blocked_json = []  # blacklist
 # list of twitter users which cannot have overflowing tweets processed
 blocked_from_of = []
 
+def load_or_create_json(path, default_data):
+    if not os.path.exists(path):
+        print(f"[Info] '{path}' not found. Creating new.")
+        with open(path, "w") as f:
+            json.dump(default_data, f)
+        return default_data
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[Error] Couldn't load '{path}': {e}")
+        return default_data
+
 # load info about twitter users interacting with bot
 # this is a fix for feedback loops with e.g. other image bots
-try:
-    with open('user_interact.json') as f:
-        user_json = json.load(f)
-except Exception as e:
-    print("[Error] Couldn't read 'user_interact.json': " + str(e))
+user_json = load_or_create_json("user_interact.json", {})
 
 # load overflowing tweet json list
-try:
-    with open('tweet_overflow.json') as f2:
-        tweet_json = json.load(f2)
-except Exception as e:
-    print("[Error] Couldn't read 'tweet_overflow.json': " + str(e))
+tweet_json = load_or_create_json("tweet_overflow.json", [])
 
 # load users which are blocked from using deformbot on twitter
-try:
-    with open('user_blocked.json') as f3:
-        blocked_json = json.load(f3)
-except Exception as e:
-    print("[Error] Couldn't read 'user_blocked.json': " + str(e))
+blocked_json = load_or_create_json("user_blocked.json", [])
 
 # load users which are blocked from having overflown tweets processed
-try:
-    with open('user_blocked_of.json') as f4:
-        blocked_from_of = json.load(f4)
-except Exception as e:
-    print("[Error] Couldn't read 'user_blocked_of.json': " + str(e))
+blocked_from_of = load_or_create_json("user_blocked_of.json", [])
 
 
 # the bot's command prefix for discord
