@@ -142,7 +142,7 @@ COMMAND_PREFIX = ['§', '$']
 MAX_ARGS = 16  # maximum number of arguments the bot accepts
 OUTPUT_PATH = os.getenv("OUTPUT_PATH", os.path.join("/home", "db_outputs")) # fallback to /home/db_outputs
 MAX_INTERACTIONS = 3
-lock = asyncio.Lock()  # Doesn't require event loop
+lock = None  # Doesn't require event loop
 tracker = SummaryTracker()
 process = psutil.Process(os.getpid())
 start_time = datetime.now()
@@ -522,6 +522,12 @@ async def on_ready():
         print("──────────────────────────────────────────────────────────────")
         print("starting DeformBot " + VERSION + " ...")
         print(f'{bot.user} has connected to Discord!')
+
+    # initialize lock inside event loop
+    global lock
+    if lock is None:
+        lock = asyncio.Lock()
+
     await bot.wait_until_ready()
     await bot.change_presence(activity=discord.Game(name="§help | /help"))
     # sync interaction tree (used for applications like slash cmds)
