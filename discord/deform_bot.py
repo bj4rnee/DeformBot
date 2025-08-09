@@ -81,7 +81,7 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.5.5_dev"
+VERSION = "1.5.6_dev"
 # Turn off in production!
 DEBUG = os.getenv('DEBUG').lower() == 'true'
 
@@ -109,6 +109,7 @@ blocked_json = []  # blacklist
 # list of twitter users which cannot have overflowing tweets processed
 blocked_from_of = []
 
+
 def load_or_create_json(path, default_data):
     if not os.path.exists(path):
         print(f"[Info] '{path}' not found. Creating new.")
@@ -121,6 +122,7 @@ def load_or_create_json(path, default_data):
     except Exception as e:
         print(f"[Error] Couldn't load '{path}': {e}")
         return default_data
+
 
 # load info about twitter users interacting with bot
 # this is a fix for feedback loops with e.g. other image bots
@@ -140,7 +142,8 @@ blocked_from_of = load_or_create_json("user_blocked_of.json", [])
 COMMAND_PREFIX = ['§', '$']
 
 MAX_ARGS = 16  # maximum number of arguments the bot accepts
-OUTPUT_PATH = os.getenv("OUTPUT_PATH", os.path.join("/home", "db_outputs")) # fallback to /home/db_outputs
+OUTPUT_PATH = os.getenv("OUTPUT_PATH", os.path.join(
+    "/home", "db_outputs"))  # fallback to /home/db_outputs
 MAX_INTERACTIONS = 3
 lock = None  # Doesn't require event loop
 tracker = SummaryTracker()
@@ -207,6 +210,14 @@ embed_unsafeurl_error = discord.Embed(
 embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
                                  icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440")
 
+embed_perm_error = discord.Embed(color=0xFF5555)
+embed_perm_error.set_author(
+    name="[Error]",
+    url="https://https://bjarne.dev/",
+    icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440"
+)
+embed_perm_error.set_footer(
+    text="Please adjust my role permissions in this channel.")
 
 # Semaphore methods
 async def wait():  # aquire the lock
@@ -374,7 +385,7 @@ def distort_image(fname, args, png: bool = False):
                 arg_error_flag = True
                 continue
             if cast_int >= 1 and cast_int <= 100:
-                #cast_float = float(cast_int)/100
+                # cast_float = float(cast_int)/100
                 # TODO fix image having spikes
                 build_str += f" -wave {round(0.7*cast_int)}x{2*cast_int} "
             continue
@@ -437,7 +448,7 @@ def distort_image(fname, args, png: bool = False):
             continue
         if e.startswith('a'):  # stereo-flag (aka anaglyph)
             # -stereo doesnt really work in a single command, therefore anaglyph is always applied last. this is a bug.
-            #build_str += f" -convert {fname} {fname} -composite -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} "
+            # build_str += f" -convert {fname} {fname} -composite -stereo +{random.randint(0, 25)}+{random.randint(1, 20)} "
             anaglyph = True
             continue
         if e.startswith('i'):  # invert-flag
@@ -460,7 +471,7 @@ def distort_image(fname, args, png: bool = False):
     distortcmd = f"magick " + \
         os.path.join(
             "raw", f"{fname}[0]") + build_str + os.path.join("results", f"{fname}")
-    #print("[CMD] " + distortcmd)
+    # print("[CMD] " + distortcmd)
     os.system(distortcmd)
 
     # TODO temporary fix for -composite not working with -stereo in magick7
@@ -545,7 +556,7 @@ async def on_ready():
             twitter_bot_loop.start()
         if not decr_interactions_loop.is_running():
             decr_interactions_loop.start()
-        #print("[IMPORTANT] You shouldn't be seeing this message!")
+        # print("[IMPORTANT] You shouldn't be seeing this message!")
     else:
         print("[Twitter] @DefomBot disabled.")
     if DEBUG:
@@ -587,7 +598,7 @@ async def trigger(ctx):
     except Exception as e:
         embed_stacktrace = discord.Embed(
             title=':x: An expetion occurred', color=0xFF5555, description="Traceback")
-        #embed_stacktrace.add_field(name='Traceback', value="Traceback")
+        # embed_stacktrace.add_field(name='Traceback', value="Traceback")
         dfile = discord.File("../misc/this_is_fine.png",
                              filename="this_is_fine.png")
         embed_stacktrace.set_image(url="attachment://this_is_fine.png")
@@ -604,8 +615,8 @@ async def memtrace(ctx):
     sum1 = summary.summarize(all_objects)
     summary.print_(sum1)
     embed_crash = discord.Embed(title=':x: Event Error', color=0xFF5555)
-    #embed_crash.add_field(name='Event', value=event)
-    #embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
+    # embed_crash.add_field(name='Event', value=event)
+    # embed_crash.description = '```py\n%s\n```' % traceback.format_exc()
     embed_crash.description = "```diff\n- collecting traces...```"
     embed_crash.timestamp = datetime.utcnow()
     await ctx.send(embed=embed_crash)
@@ -700,7 +711,8 @@ async def deform(ctx, *args):
                 # we land here on success
 
             if url[0:26] == "https://cdn.discordapp.com":
-                test_url = url.split('?')[0] # fix for discords new url params (again!!)
+                # fix for discords new url params (again!!)
+                test_url = url.split('?')[0]
                 if test_url[-4:].casefold() == ".jpg".casefold() or test_url[-4:].casefold() == ".png".casefold() or test_url[-5:].casefold() == ".jpeg".casefold() or test_url[-4:].casefold() == ".gif".casefold():
                     r = requests.get(url, stream=True)
                     image_name = str(uuid.uuid4()) + '.jpg'  # generate uuid
@@ -885,21 +897,24 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                 return
 
 
-@deform_slash.error
-async def deform_slash_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    if isinstance(error, app_commands.errors.BotMissingPermissions):
-        await interaction.response.send_message(
-            f"I can't do that here: missing permissions: {', '.join(error.missing_permissions)}",
-            ephemeral=True
-        )
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.BotMissingPermissions):
+        perms_list = "\n".join(f"• `{p}`" for p in error.missing_permissions)
+        embed = embed_perm_error.copy()
+        embed.description = f"Can't run that command here because I'm missing permissions:\n{perms_list}"
+        await interaction.response.send_message(embed=embed,
+                                                ephemeral=True
+                                                )
 
 
 # deform via context menu
 @bot.tree.context_menu(name="Deform")
+@app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def deform_cm(interaction: discord.Interaction, message: discord.Message):
     # the response has to be deferred at the start, bc interaction has 3s lifetime
     await interaction.response.defer()
-    
+
     async with lock:
         msg = message
         ch = msg.channel
@@ -1043,7 +1058,7 @@ async def check_mentions(api, s_id):
 
     # Retrieving mentions
     new_since_id = s_id
-    twitter_media_url = [] # list of tweet media url(s)
+    twitter_media_url = []  # list of tweet media url(s)
     mentions = []
 
     try:
@@ -1065,7 +1080,7 @@ async def check_mentions(api, s_id):
 
         for tweet in mentions:
             new_since_id = max(tweet.id, new_since_id)
-            #os.environ['last_id'] = str(new_since_id)
+            # os.environ['last_id'] = str(new_since_id)
             # only works when process is terminated
             set_key(".env", 'last_id', str(new_since_id))
 
@@ -1125,7 +1140,8 @@ async def check_mentions(api, s_id):
             else:
                 tw_entities = tweet.entities
             if 'media' in tw_entities:  # tweet that mentionions db contains image
-                raw_images_links = [d['media_url'] for d in tw_entities.get('media', [])]
+                raw_images_links = [d['media_url']
+                                    for d in tw_entities.get('media', [])]
                 if (len(raw_images_links) > 0):
                     twitter_media_url = raw_images_links
                 else:
@@ -1141,7 +1157,8 @@ async def check_mentions(api, s_id):
                     if hasattr(r_tweet, 'possibly_sensitive'):
                         sensitive = (r_tweet.possibly_sensitive or sensitive)
                     if 'media' in r_tw_entities:  # TODO sometimes this isn't true even if media is shown in tweet -> attempted fix but not tested
-                        raw_images_links = [d['media_url'] for d in r_tw_entities.get('media', [])]
+                        raw_images_links = [d['media_url']
+                                            for d in r_tw_entities.get('media', [])]
                         if (len(raw_images_links) > 0):
                             twitter_media_url = raw_images_links
                         else:
@@ -1185,7 +1202,7 @@ async def check_mentions(api, s_id):
                             with open(os.path.join("raw", image_name), 'wb') as out_file:
                                 if DEBUG:
                                     print("───────────" +
-                                        image_name + "───────────")
+                                          image_name + "───────────")
                                     print("saving image: " + image_name)
                                 shutil.copyfileobj(r.raw, out_file)
                                 out_file.flush()
@@ -1198,7 +1215,8 @@ async def check_mentions(api, s_id):
                                 if arg_error_flag:
                                     arg_error_flag = False
                                     # we're not sending massive amounts of error msgs to twitter
-                                    print("[Twitter] argument error flag was true")
+                                    print(
+                                        "[Twitter] argument error flag was true")
 
                                 if DEBUG:
                                     print("distorted image: " + image_name)
@@ -1206,29 +1224,30 @@ async def check_mentions(api, s_id):
                                         "──────────────────────────────────────────────────────────────")
                                 # send distorted image
                                 # TODO 5MB FILESIZE LIMIT!!!!!!!!!!!!!
-                                result_img = api.media_upload(os.path.join("results", image_name))
+                                result_img = api.media_upload(
+                                    os.path.join("results", image_name))
                                 result_image_ids.append(result_img.media_id)
                         else:
                             api.update_status(status="[ERROR] Can't process this filetype. Only '.jpg', '.jpeg', '.png' and '.gif' are supported at the moment.",
-                                            in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                                              in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                             continue
                     else:
                         # unsafe url
                         api.update_status(status="[ERROR] Unsafe url detected. Only images hosted on Twitter are supported at the moment.",
-                                        in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
+                                          in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True, possibly_sensitive=sensitive)
                         continue
                 if DEBUG:
                     api.update_status(status="image ID: " + image_name.replace(".jpg", "") + "\n#TwitterBot", in_reply_to_status_id=tweet.id,
-                                        auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=result_image_ids)
+                                      auto_populate_reply_metadata=True, possibly_sensitive=sensitive, media_ids=result_image_ids)
                     continue
                 api.update_status(status="#TwitterBot", in_reply_to_status_id=tweet.id, auto_populate_reply_metadata=True,
-                                    possibly_sensitive=sensitive, media_ids=result_image_ids)
+                                  possibly_sensitive=sensitive, media_ids=result_image_ids)
                 continue
-                    
+
     except (tweepy.TweepyException, tweepy.HTTPException) as e:
         print("[Error] TweepyException in check_mentions: " + str(e))
 
-#api.update_status('@' + tweet.user.screen_name + " Here you go:", tweet.id, media_ids=[result_img.media_id])
+# api.update_status('@' + tweet.user.screen_name + " Here you go:", tweet.id, media_ids=[result_img.media_id])
 
     return new_since_id
 
