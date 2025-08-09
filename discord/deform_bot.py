@@ -81,9 +81,9 @@ from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 
-VERSION = "1.5.4_dev"
+VERSION = "1.5.5_dev"
 # Turn off in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG').lower() == 'true'
 
 # load the env variables
 load_dotenv()
@@ -787,6 +787,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
         msg = await ch.fetch_message(msg)
 
     global arg_error_flag
+    await interaction.response.defer()
     async with lock:
         reply_msg = None  # there cannot be a reply_msg with slash commads at the moment
         url = ""
@@ -855,7 +856,6 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                         # flush the buffer, this fixes ReadException
                         out_file.flush()
 
-                        await interaction.response.defer()
                         # distort the file
                         distorted_file = distort_image(image_name, args)
 
@@ -887,6 +887,9 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
 # deform via context menu
 @bot.tree.context_menu(name="Deform")
 async def deform_cm(interaction: discord.Interaction, message: discord.Message):
+    # the response has to be deferred at the start, bc interaction has 3s lifetime
+    await interaction.response.defer()
+    
     async with lock:
         msg = message
         ch = msg.channel
@@ -930,8 +933,6 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                             shutil.copyfileobj(r.raw, out_file)
                             out_file.flush()
 
-                            # unfortunately await can't be used here so the response has to be deferred
-                            await interaction.response.defer()
                             distorted_file = distort_image(image_name, ())
 
                             if DEBUG:

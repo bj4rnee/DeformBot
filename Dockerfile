@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 # install build tools and ImageMagick dependencies
 RUN apt-get update && \
-    apt-get install -y wget autoconf pkg-config build-essential \
+    apt-get install -y wget autoconf pkg-config build-essential nano \
     curl libpng-dev libjpeg-dev libtiff-dev libxml2-dev fontconfig libfreetype6-dev ghostscript graphviz libtool && \
     wget https://imagemagick.org/archive/ImageMagick.tar.gz && \
     mkdir /tmp/imagemagick && \
