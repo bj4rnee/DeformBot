@@ -759,6 +759,7 @@ async def deform(ctx, *args):
                        u='Disable compression',
                        )
 @app_commands.choices(f=[discord.app_commands.Choice(name='horizontal', value='fh'), discord.app_commands.Choice(name='vertical', value='fv')])
+@app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, l: int = None, s: int = None, b: int = None, n: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None,
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
     args_dict = locals()  # this has to be the fist call in the function
@@ -812,7 +813,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                     else:
                         url = msg.embeds[0].image.url
                         if isinstance(url, str) == False:
-                            await interaction.response.send_message(embed=embed_nofile_error)
+                            await interaction.followup.send(embed=embed_nofile_error)
                             return
                 else:
                     raise IndexError("No file or msgID given")
@@ -836,7 +837,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                             break
                     except (IndexError, TypeError):
                         if omsg == older_msgs[-1]:
-                            await interaction.response.send_message(embed=embed_nofile_error)
+                            await interaction.followup.send(embed=embed_nofile_error)
                             return
                         else:
                             continue
@@ -876,12 +877,21 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                         await interaction.followup.send(file=distorted_file)
                         return
                 else:
-                    await interaction.response.send_message(embed=embed_wrongfile_error)
+                    await interaction.followup.send(embed=embed_wrongfile_error)
                     return
             else:
                 # handle non-discord url
-                await interaction.response.send_message(embed=embed_unsafeurl_error)
+                await interaction.followup.send(embed=embed_unsafeurl_error)
                 return
+
+
+@deform_slash.error
+async def deform_slash_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.errors.BotMissingPermissions):
+        await interaction.response.send_message(
+            f"I can't do that here: missing permissions: {', '.join(error.missing_permissions)}",
+            ephemeral=True
+        )
 
 
 # deform via context menu
@@ -911,11 +921,11 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                 else:
                     url = msg.embeds[0].image.url
                     if isinstance(url, str) == False:
-                        await interaction.response.send_message(embed=embed_nofile_error)
+                        await interaction.followup.send(embed=embed_nofile_error)
                         return
             except (IndexError, TypeError):
                 if DEBUG:  # don't send errors on reaction
-                    await interaction.response.send_message(embed=embed_nofile_error)
+                    await interaction.followup.send(embed=embed_nofile_error)
                 return
             else:
                 if url[0:26] == "https://cdn.discordapp.com":
@@ -947,10 +957,10 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                             return
                     else:
                         if DEBUG:
-                            await interaction.response.send_message(embed=embed_wrongfile_error)
+                            await interaction.followup.send(embed=embed_wrongfile_error)
                         return
                 else:
-                    await interaction.response.send_message(embed=embed_unsafeurl_error)
+                    await interaction.followup.send(embed=embed_unsafeurl_error)
                     return
 
 
