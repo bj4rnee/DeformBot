@@ -82,9 +82,10 @@ from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
 from typing import Tuple
 
-VERSION = "1.5.6_dev"
+VERSION = "1.6.0_dev"
 # Turn off in production!
 DEBUG = os.getenv('DEBUG').lower() == 'true'
+ENABLE_LOGGING = os.getenv('ENABLE_LOGGING').lower() == 'true'
 
 # load the env variables
 load_dotenv()
@@ -161,7 +162,7 @@ intents.reactions = True
 intents.dm_reactions = True
 
 # this is a hack to log print to a file but keep stdout
-if os.getenv('ENABLE_LOGGING').lower() == 'true':
+if ENABLE_LOGGING:
     log_path = os.path.join(OUTPUT_PATH, "db.log")
     if os.path.exists(OUTPUT_PATH):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
@@ -189,7 +190,6 @@ api = tweepy.API(auth, wait_on_rate_limit=True)  # twitter api object
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, help_command=None,
                    description="an Open Source image distortion discord bot", intents=intents)
 client = discord.Client(intents=intents)  # deprecated
-bot.mutex = True  # mutex lock
 
 embed_nofile_error = discord.Embed(
     description="No attachments", color=0xFF5555)
@@ -219,20 +219,6 @@ embed_perm_error.set_author(
 )
 embed_perm_error.set_footer(
     text="Please adjust my role permissions in this channel.")
-
-# Semaphore methods
-async def wait():  # aquire the lock
-    while bot.mutex == False:
-        await asyncio.sleep(1)
-        print('.', end='')
-        pass
-    bot.mutex = False
-    return bot.mutex
-
-
-async def signal():  # free the lock
-    bot.mutex = True
-    return bot.mutex
 
 
 # testing with explicitly releasing resources before program exit
@@ -496,10 +482,11 @@ def distort_image(fname, args, png: bool = False):
 
     # backup file to specified output path
     bkp_path = OUTPUT_PATH
-    if os.path.exists(bkp_path):
+    if ENABLE_LOGGING and os.path.exists(bkp_path):
         free_bytes = psutil.disk_usage(bkp_path).free
         if DEBUG:
-            print(f"[DEBUG] free backup space: {free_bytes / (1024 ** 3):.3f} GiB")
+            print(
+                f"[DEBUG] free backup space: {free_bytes / (1024 ** 3):.3f} GiB")
         if free_bytes >= 536_870_912:  # around 500MiB
             try:
                 bkp_name = fname
@@ -579,7 +566,8 @@ async def on_command_error(ctx, error):
             await ctx.author.send(embed=embed)
             return
         except (discord.Forbidden, discord.HTTPException) as exc:
-            print(f"[Error] Could not DM user {str(ctx.author)} about missing perms: {str(exc)}")
+            print(
+                f"[Error] Could not DM user {str(ctx.author)} about missing perms: {str(exc)}")
             return
     if isinstance(error, app_commands.BotMissingPermissions):
         return
@@ -769,7 +757,12 @@ async def deform(ctx, *args):
                                 "──────────────────────────────────────────────────────────────")
                         # send distorted image
                         if DEBUG:
-                            await ctx.send(f"image ID: {image_name.replace('.jpg', '')}\nApplied Arguments: {', '.join(f'`{a}`' for a in args)}", file=distorted_file)
+                            args_str = ', '.join(f'`{a}`' for a in args)
+                            db_message = (
+                                f"image ID: {image_name.replace('.jpg', '')}\n"
+                                f"Applied Arguments: {args_str}"
+                            )
+                            await ctx.send(db_message, file=distorted_file)
                             return
                         await ctx.send(file=distorted_file)
                         return
@@ -1001,6 +994,117 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                     return
 
 
+# slash random deform
+@bot.tree.command(name="random", description="Deform an image with random parameters. For usage refer to /help")
+@app_commands.describe(file='Attach an image to deform',
+                       message_id='ID of a message containing an image',
+                       n='Number of random parameters',
+                       )
+@app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
+async def deform_random_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, n: int = 1):
+    await interaction.response.defer()
+    ch = interaction.channel
+
+    try:
+        # interactions aren't handled via a message. Therefore msg is a message ID integer.
+        msg = int(message_id)
+    except (ValueError, TypeError):
+        msg = None
+    if (not file) and msg:
+        msg = await ch.fetch_message(msg)
+
+    async with lock:
+        url = ""
+        async with ch.typing():
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+            try:
+                if file:  # file is passed to call
+                    url = file.url
+                elif msg:  # msgID is passed to call and is valid int -> msg object available
+                    # check for embeds first
+                    if len(msg.embeds) <= 0:  # no embeds
+                        url = msg.attachments[0].url
+                    else:
+                        url = msg.embeds[0].image.url
+                        if isinstance(url, str) == False:
+                            await interaction.followup.send(embed=embed_nofile_error)
+                            return
+                else:
+                    raise IndexError("No file or msgID given")
+            except (IndexError, TypeError):
+                # we look for older msgs
+                older_msgs = [m async for m in ch.history(limit=10)]
+                # check if an older msg contains image
+                for omsg in older_msgs:
+                    try:
+                        if len(omsg.embeds) <= 0:  # no embeds
+                            url = omsg.attachments[0].url
+                            break
+                        else:
+                            url = omsg.embeds[0].image.url
+                            if isinstance(url, str) == False:
+                                raise TypeError(
+                                    "Embed didn't contain valid image link")
+                            break
+                    except (IndexError, TypeError):
+                        if omsg == older_msgs[-1]:
+                            await interaction.followup.send(embed=embed_nofile_error)
+                            return
+                        else:
+                            continue
+            # we land here on success
+            if url.startswith("https://cdn.discordapp.com"):
+                test_url = url.split("?", 1)[0]
+                allowed_exts = {".jpg", ".png", ".jpeg", ".gif"}
+
+                # check extension
+                if any(test_url.casefold().endswith(ext) for ext in allowed_exts):
+                    r = requests.get(url, stream=True)
+                    # always saved as .jpg
+                    image_name = f"{uuid.uuid4()}.jpg"
+
+                    with open(os.path.join("raw", image_name), "wb") as out_file:
+                        if DEBUG:
+                            print(f"───────────{image_name}───────────")
+                            print(f"saving image: {image_name}")
+
+                        shutil.copyfileobj(r.raw, out_file)
+                        out_file.flush()
+
+                    args = generate_random_args(n)
+                    distorted_file = distort_image(image_name, args)
+
+                    if DEBUG:
+                        print(f"distorted image: {image_name}")
+                        print(
+                            "──────────────────────────────────────────────────────────────")
+                        args_str = ', '.join(f'`{a}`' for a in args)
+                        db_message = (
+                            f"image ID: {image_name.replace('.jpg', '')}\n"
+                            f"Applied Arguments: {args_str}"
+                        )
+                        await interaction.followup.send(db_message, file=distorted_file)
+                        return
+
+                    await interaction.followup.send(file=distorted_file)
+                    return
+
+                # wrong file extension
+                if DEBUG:
+                    await interaction.followup.send(embed=embed_wrongfile_error)
+                return
+
+            # unsafe URL
+            await interaction.followup.send(embed=embed_unsafeurl_error)
+            return
+
+
 # context menu random deform with 3 arguments
 @bot.tree.context_menu(name="Random Deform")
 @app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
@@ -1039,7 +1143,8 @@ async def deform_random_cm(interaction: discord.Interaction, message: discord.Me
                     # check extension
                     if any(test_url.casefold().endswith(ext) for ext in allowed_exts):
                         r = requests.get(url, stream=True)
-                        image_name = f"{uuid.uuid4()}.jpg"  # always saved as .jpg
+                        # always saved as .jpg
+                        image_name = f"{uuid.uuid4()}.jpg"
 
                         with open(os.path.join("raw", image_name), "wb") as out_file:
                             if DEBUG:
@@ -1054,10 +1159,14 @@ async def deform_random_cm(interaction: discord.Interaction, message: discord.Me
 
                         if DEBUG:
                             print(f"distorted image: {image_name}")
-                            print("──────────────────────────────────────────────────────────────")
-                            await interaction.followup.send(
-                                f"image ID: {image_name.replace('.jpg', '')}\nApplied Arguments: {', '.join(f'`{a}`' for a in args)}", file=distorted_file
+                            print(
+                                "──────────────────────────────────────────────────────────────")
+                            args_str = ', '.join(f'`{a}`' for a in args)
+                            db_message = (
+                                f"image ID: {image_name.replace('.jpg', '')}\n"
+                                f"Applied Arguments: {args_str}"
                             )
+                            await interaction.followup.send(db_message, file=distorted_file)
                             return
 
                         await interaction.followup.send(file=distorted_file)
@@ -1071,13 +1180,13 @@ async def deform_random_cm(interaction: discord.Interaction, message: discord.Me
                 # unsafe URL
                 await interaction.followup.send(embed=embed_unsafeurl_error)
                 return
-                
+
 
 @bot.event
 async def on_reaction_add(reaction, user):  # if reaction is on a cached message
     if user == bot.user or str(reaction.emoji) != "🤖":
         return
-    
+
     async with lock:
         msg = reaction.message
         ch = msg.channel
@@ -1085,7 +1194,8 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
         bot_member = ch.guild.me
         perms = ch.permissions_for(bot_member)
 
-        required = ["send_messages", "attach_files", "read_message_history", "read_messages"]
+        required = ["send_messages", "attach_files",
+                    "read_message_history", "read_messages"]
 
         # check for missing perms
         missing = [p for p in required if not getattr(perms, p, False)]
@@ -1126,7 +1236,7 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                         with open(os.path.join("raw", image_name), 'wb') as out_file:
                             if DEBUG:
                                 print("───────────" +
-                                        image_name + "───────────")
+                                      image_name + "───────────")
                                 print("saving image: " + image_name)
                             shutil.copyfileobj(r.raw, out_file)
                             out_file.flush()
@@ -1157,10 +1267,10 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 def generate_random_args(n: int) -> Tuple[str]:
     # available args with their ranges/types
     args_info = {
-        "l": ("int", 8, 100),
+        "l": ("int", 7, 80),
         "s": ("int", -360, 360),
         "n": ("int", 4, 70),
-        "b": ("int", 2, 15),
+        "b": ("int", 1, 7),
         "c": ("int", -100, 100),
         "o": ("int", -100, 100),
         "d": ("int", 2, 18),
