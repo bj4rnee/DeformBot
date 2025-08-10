@@ -213,7 +213,7 @@ embed_wrongfile_error.set_author(name="[Error]", url="https://bjarne.dev/",
 embed_perm_error = discord.Embed(color=0xFF5555)
 embed_perm_error.set_author(
     name="[Error]",
-    url="https://https://bjarne.dev/",
+    url="https://bjarne.dev/",
     icon_url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/9e/Barrier_%28held%29_JE2_BE2.png/revision/latest?cb=20200224220440"
 )
 embed_perm_error.set_footer(
@@ -569,11 +569,29 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         print(f"[Info] Unknown command received: {ctx.message.content}")
         return
+    if isinstance(error, commands.BotMissingPermissions):
+        perms_list = "\n".join(f"• `{p}`" for p in error.missing_permissions)
+        embed = embed_perm_error.copy()
+        embed.description = f"Can't run that command here because I'm missing permissions:\n{perms_list}"
+        await ctx.send(embed=embed)
     # let other errors bubble up
     raise error
 
 
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.BotMissingPermissions):
+        perms_list = "\n".join(f"• `{p}`" for p in error.missing_permissions)
+        embed = embed_perm_error.copy()
+        embed.description = f"Can't run that command here because I'm missing permissions:\n{perms_list}"
+        await interaction.response.send_message(embed=embed,
+                                                ephemeral=True
+                                                )
+
+
 @bot.hybrid_command(name="status", with_app_command=True, description="Shows status")
+@commands.bot_has_permissions(send_messages=True)
+@app_commands.checks.bot_has_permissions(send_messages=True)
 async def status(ctx):
     current_time = datetime.now()
     timestr = 'Uptime:\t{}\n'.format(current_time.replace(
@@ -590,6 +608,7 @@ async def status(ctx):
 
 
 @bot.command(name='trigger', help='Triggers testing function')
+@commands.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def trigger(ctx):
     try:
         # test this function call / loc
@@ -776,6 +795,7 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                        f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
     args_dict = locals()  # this has to be the fist call in the function
     args_dict.pop('interaction', None)  # remove interaction object
+    args_dict.pop('message_id', None)
     args = []
     for a in args_dict:
         if args_dict[a]:
@@ -895,17 +915,6 @@ async def deform_slash(interaction: discord.Interaction, file: discord.Attachmen
                 # handle non-discord url
                 await interaction.followup.send(embed=embed_unsafeurl_error)
                 return
-
-
-@bot.tree.error
-async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    if isinstance(error, app_commands.BotMissingPermissions):
-        perms_list = "\n".join(f"• `{p}`" for p in error.missing_permissions)
-        embed = embed_perm_error.copy()
-        embed.description = f"Can't run that command here because I'm missing permissions:\n{perms_list}"
-        await interaction.response.send_message(embed=embed,
-                                                ephemeral=True
-                                                )
 
 
 # deform via context menu
