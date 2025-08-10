@@ -1282,7 +1282,7 @@ def generate_random_args(n: int) -> Tuple[str]:
         "g": ("bool", None),
     }
 
-    n = min(1, max(n, len(args_info)))
+    n = max(1, min(n, len(args_info)))
     results = []
     available = list(args_info.keys())
 
