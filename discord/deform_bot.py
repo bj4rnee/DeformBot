@@ -579,6 +579,9 @@ async def on_command_error(ctx, error):
             return
         except (discord.Forbidden, discord.HTTPException) as exc:
             print(f"[Error] Could not DM user {str(ctx.author)} about missing perms: {str(exc)}")
+            return
+    if isinstance(error, app_commands.BotMissingPermissions):
+        return
     # let other errors bubble up
     raise error
 
