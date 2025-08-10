@@ -80,6 +80,7 @@ from glob import glob
 from PIL import Image
 from pympler.tracker import SummaryTracker
 from pympler import summary, muppy
+from typing import Tuple
 
 VERSION = "1.5.6_dev"
 # Turn off in production!
@@ -674,7 +675,7 @@ async def help(ctx):
     helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  shepard's distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
     helpstr_usage = "\n\n**Usage:**\n`§deform [option0][value] [option1][value] ...`\nExamples:\n _§deform s35 n95 l45 c+40 b1_\n_§deform l50 s25 c+30 n70 g_"
     help_embed = discord.Embed(
-        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com/DeformBot)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with `🤖` to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
+        description="[Website](https://bjarne.dev)\n[Github](https://github.com/bj4rnee/DeformBot)\n[Twitter](https://twitter.com/DeformBot)\n\n**Commands:**\n`help`:  Shows this help message\n`deform`:  Distort an attached image\nYou can also react to an image with 🤖 to quickly deform it." + helpstr_args + helpstr_usage, color=rand_color)
     help_embed.set_author(name="Hi, I'm an Open Source image distortion discord bot!", url="https://bjarne.dev/",
                           icon_url="https://cdn.discordapp.com/avatars/971742838024978463/4e6548403fb46347b84de17fe31a45b9.webp")
     await ctx.send(embed=help_embed)
@@ -1000,6 +1001,77 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                     return
 
 
+# context menu random deform with 3 arguments
+@bot.tree.context_menu(name="Random Deform")
+@app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
+async def deform_random_cm(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.defer()
+
+    async with lock:
+        msg = message
+        ch = msg.channel
+
+        async with ch.typing():
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+
+            # fetch and process the image
+            try:
+                if len(msg.embeds) <= 0:  # no embeds
+                    url = msg.attachments[0].url
+                else:
+                    url = msg.embeds[0].image.url
+                    if isinstance(url, str) == False:
+                        raise TypeError("url is not a string")
+            except (IndexError, TypeError):
+                await interaction.followup.send(embed=embed_nofile_error)
+                return
+            else:
+                if url.startswith("https://cdn.discordapp.com"):
+                    test_url = url.split("?", 1)[0]
+                    allowed_exts = {".jpg", ".png", ".jpeg", ".gif"}
+
+                    # check extension
+                    if any(test_url.casefold().endswith(ext) for ext in allowed_exts):
+                        r = requests.get(url, stream=True)
+                        image_name = f"{uuid.uuid4()}.jpg"  # always saved as .jpg
+
+                        with open(os.path.join("raw", image_name), "wb") as out_file:
+                            if DEBUG:
+                                print(f"───────────{image_name}───────────")
+                                print(f"saving image: {image_name}")
+
+                            shutil.copyfileobj(r.raw, out_file)
+                            out_file.flush()
+
+                        distorted_file = distort_image(image_name, generate_random_args(3))
+
+                        if DEBUG:
+                            print(f"distorted image: {image_name}")
+                            print("──────────────────────────────────────────────────────────────")
+                            await interaction.followup.send(
+                                "image ID: " + image_name.replace(".jpg", ""), file=distorted_file
+                            )
+                            return
+
+                        await interaction.followup.send(file=distorted_file)
+                        return
+
+                    # wrong file extension
+                    if DEBUG:
+                        await interaction.followup.send(embed=embed_wrongfile_error)
+                    return
+
+                # unsafe URL
+                await interaction.followup.send(embed=embed_unsafeurl_error)
+                return
+                
+
 @bot.event
 async def on_reaction_add(reaction, user):  # if reaction is on a cached message
     if user == bot.user or str(reaction.emoji) != "🤖":
@@ -1079,6 +1151,56 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
                 else:
                     await ch.send(embed=embed_unsafeurl_error)
                     return
+
+
+def generate_random_args(n: int) -> Tuple[str]:
+    # available args with their ranges/types
+    args_info = {
+        "l": ("int", 0, 100),
+        "s": ("int", -360, 360),
+        "n": ("int", 0, 100),
+        "b": ("int", 0, 100),
+        "c": ("int", -100, 100),
+        "o": ("int", -100, 100),
+        "d": ("int", 0, 100),
+        "w": ("int", 0, 100),
+        "r": ("int", -360, 360),
+        "f": ("string", ["h", "v"]),
+        "a": ("bool", None),
+        "i": ("bool", None),
+        "g": ("bool", None),
+    }
+
+    n = min(1, max(n, len(args_info)))
+    results = []
+    available = list(args_info.keys())
+
+    # keep picking until exactly n entries
+    while len(results) < n and available:
+        opt = random.choice(available)
+        available.remove(opt)
+
+        type_info = args_info[opt]
+        if type_info[0] == "int":
+            _, min_val, max_val = type_info
+            val = random.randint(min_val, max_val)
+            results.append(f"{opt}{val}")
+
+        elif type_info[0] == "string":
+            _, choices = type_info
+            val = random.choice(choices)
+            results.append(f"{opt}{val}")
+
+        elif type_info[0] == "bool":
+            val = random.choice([True, False])
+            if val:
+                results.append(opt)
+            else:
+                # if false, dont count it. put another option back in play if possible
+                if available:
+                    continue
+
+    return tuple(results)
 
 
 async def check_mentions(api, s_id):
