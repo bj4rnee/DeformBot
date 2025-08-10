@@ -496,10 +496,10 @@ def distort_image(fname, args, png: bool = False):
     # backup file to specified output path
     bkp_path = OUTPUT_PATH
     if os.path.exists(bkp_path):
+        free_bytes = psutil.disk_usage(bkp_path).free
         if DEBUG:
-            print("[DEBUG] free backup space: " +
-                  str(psutil.disk_usage(bkp_path).free) + "B")
-        if psutil.disk_usage(bkp_path).free >= 536870912:  # around 500MiB
+            print(f"[DEBUG] free backup space: {free_bytes / (1024 ** 3):.3f} GiB")
+        if free_bytes >= 536_870_912:  # around 500MiB
             try:
                 bkp_name = fname
                 # check if name collides (extremely unlikely but possible)
