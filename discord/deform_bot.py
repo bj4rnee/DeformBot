@@ -599,7 +599,6 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
 
 @bot.hybrid_command(name="status", with_app_command=True, description="Shows status")
 @commands.bot_has_permissions(send_messages=True)
-@app_commands.checks.bot_has_permissions(send_messages=True)
 async def status(ctx):
     current_time = datetime.now()
     timestr = 'Uptime:\t{}\n'.format(current_time.replace(
@@ -670,7 +669,6 @@ async def ai(ctx):
 
 @bot.hybrid_command(name='help', with_app_command=True, help='Shows usage info', description='Shows usage info', aliases=['h', 'info', 'usage'])
 @commands.bot_has_permissions(send_messages=True, attach_files=True)
-@app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True)
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
     helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  shepard's distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
