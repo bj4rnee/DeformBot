@@ -769,7 +769,7 @@ async def deform(ctx, *args):
                                 "──────────────────────────────────────────────────────────────")
                         # send distorted image
                         if DEBUG:
-                            await ctx.send("image ID: " + image_name.replace(".jpg", "") + "\nargs=" + str(args), file=distorted_file)
+                            await ctx.send(f"image ID: {image_name.replace(".jpg", "")}\nApplied Arguments: {', '.join(f'`{a}`' for a in args)}", file=distorted_file)
                             return
                         await ctx.send(file=distorted_file)
                         return
@@ -1049,13 +1049,14 @@ async def deform_random_cm(interaction: discord.Interaction, message: discord.Me
                             shutil.copyfileobj(r.raw, out_file)
                             out_file.flush()
 
-                        distorted_file = distort_image(image_name, generate_random_args(3))
+                        args = generate_random_args(3)
+                        distorted_file = distort_image(image_name, args)
 
                         if DEBUG:
                             print(f"distorted image: {image_name}")
                             print("──────────────────────────────────────────────────────────────")
                             await interaction.followup.send(
-                                "image ID: " + image_name.replace(".jpg", ""), file=distorted_file
+                                f"image ID: {image_name.replace(".jpg", "")}\nApplied Arguments: {', '.join(f'`{a}`' for a in args)}", file=distorted_file
                             )
                             return
 
@@ -1156,14 +1157,14 @@ async def on_reaction_add(reaction, user):  # if reaction is on a cached message
 def generate_random_args(n: int) -> Tuple[str]:
     # available args with their ranges/types
     args_info = {
-        "l": ("int", 0, 100),
+        "l": ("int", 8, 100),
         "s": ("int", -360, 360),
-        "n": ("int", 0, 100),
-        "b": ("int", 0, 100),
+        "n": ("int", 4, 70),
+        "b": ("int", 2, 15),
         "c": ("int", -100, 100),
         "o": ("int", -100, 100),
-        "d": ("int", 0, 100),
-        "w": ("int", 0, 100),
+        "d": ("int", 2, 18),
+        "w": ("int", 5, 80),
         "r": ("int", -360, 360),
         "f": ("string", ["h", "v"]),
         "a": ("bool", None),
