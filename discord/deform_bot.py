@@ -573,7 +573,12 @@ async def on_command_error(ctx, error):
         perms_list = "\n".join(f"• `{p}`" for p in error.missing_permissions)
         embed = embed_perm_error.copy()
         embed.description = f"Can't run that command here because I'm missing permissions:\n{perms_list}"
-        await ctx.send(embed=embed)
+        # DM the command author bc we're most likely missing perms in ctx
+        try:
+            await ctx.author.send(embed=embed)
+            return
+        except (discord.Forbidden, discord.HTTPException) as exc:
+            print(f"[Error] Could not DM user {str(ctx.author)} about missing perms: {str(exc)}")
     # let other errors bubble up
     raise error
 
@@ -628,6 +633,7 @@ async def trigger(ctx):
 
 
 @bot.command(name='memtrace', help='Outputs last memorytrace', aliases=['t', 'trace'])
+@commands.bot_has_permissions(send_messages=True, attach_files=True)
 async def memtrace(ctx):
     # tracker.print_diff() # this termporarly solves schroedingers memory leak??
     all_objects = muppy.get_objects(include_frames=True)
@@ -642,6 +648,7 @@ async def memtrace(ctx):
 
 
 @bot.command(name='garbage', help='triggers garbage collector', aliases=['g', 'gc'])
+@commands.bot_has_permissions(send_messages=True, attach_files=True)
 async def garbage(ctx):
     collected = gc.collect()  # manually collect garbage
     print("[Debug] garbage collected: " + str(collected) + " objects")
@@ -653,11 +660,14 @@ async def garbage(ctx):
 
 
 @bot.command(name='ai', help='generate image with AI', aliases=['deformai'])
+@commands.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def ai(ctx):
     return
 
 
 @bot.hybrid_command(name='help', with_app_command=True, help='Shows usage info', description='Shows usage info', aliases=['h', 'info', 'usage'])
+@commands.bot_has_permissions(send_messages=True, attach_files=True)
+@app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True)
 async def help(ctx):
     rand_color = random.randint(0, 0xFFFFFF)
     helpstr_args = "\n\n**Arguments:**\n`l`:  Seam-Carving factor\n`s`:  swirl (degrees)\n`n`:  noise\n`b`:  blur\n`c`:  contrast (allows negative values)\n`o`:  implode\n`d`:  shepard's distortion\n`i`:  invert colors\n`g`:  grayscale image\n`u`:  disable compression\nAll arguments can be arbitrarily combined or left out.\nOnly integer values are accepted, I advise to play around with those values to find something that looks good."
@@ -671,6 +681,7 @@ async def help(ctx):
 
 # standard non-slash command
 @bot.command(name='deform', help='deform an image', aliases=['d', 'D' 'distort'])
+@commands.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def deform(ctx, *args):
     global arg_error_flag
     async with lock:
@@ -990,74 +1001,83 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
 
 @bot.event
 async def on_reaction_add(reaction, user):  # if reaction is on a cached message
-    if user != bot.user:
-        if str(reaction.emoji) == "🤖":
-            async with lock:
-                msg = reaction.message
-                ch = msg.channel
+    if user == bot.user or str(reaction.emoji) != "🤖":
+        return
+    
+    async with lock:
+        msg = reaction.message
+        ch = msg.channel
 
-                async with ch.typing():  # trigger typing indicator
-                    # first delete the existing files
-                    for delf in os.listdir("raw"):
-                        if delf.endswith(".jpg"):
-                            os.remove(os.path.join("raw", delf))
+        bot_member = ch.guild.me
+        perms = ch.permissions_for(bot_member)
 
-                    for delf2 in os.listdir("results"):
-                        if delf2.endswith(".jpg"):
-                            os.remove(os.path.join("results", delf2))
+        required = ["send_messages", "attach_files", "read_message_history", "read_messages"]
 
-                    # fetch and process the image
-                    try:
-                        if len(msg.embeds) <= 0:  # no embeds
-                            url = msg.attachments[0].url
-                        else:
-                            url = msg.embeds[0].image.url
-                            if isinstance(url, str) == False:
-                                await ch.send(embed=embed_nofile_error)
-                                return
-                    except (IndexError, TypeError):
-                        if DEBUG:  # don't send errors on reaction
-                            await ch.send(embed=embed_nofile_error)
-                        return
-                    else:
-                        if url[0:26] == "https://cdn.discordapp.com":
-                            test_url = url.split('?')[0]
-                            if test_url[-4:].casefold() == ".jpg".casefold() or test_url[-4:].casefold() == ".png".casefold() or test_url[-5:].casefold() == ".jpeg".casefold() or test_url[-4:].casefold() == ".gif".casefold():
-                                r = requests.get(url, stream=True)
-                                image_name = str(uuid.uuid4()) + \
-                                    '.jpg'  # generate uuid
-
-                                with open(os.path.join("raw", image_name), 'wb') as out_file:
-                                    if DEBUG:
-                                        print("───────────" +
-                                              image_name + "───────────")
-                                        print("saving image: " + image_name)
-                                    shutil.copyfileobj(r.raw, out_file)
-                                    out_file.flush()
-
-                                    # unfortunately await can't be used here
-                                    distorted_file = distort_image(
-                                        image_name, ())
-
-                                    if DEBUG:
-                                        print("distorted image: " + image_name)
-                                        print(
-                                            "──────────────────────────────────────────────────────────────")
-                                    # send distorted image
-                                    if DEBUG:
-                                        await ch.send("image ID: " + image_name.replace(".jpg", ""), file=distorted_file)
-                                        return
-                                    await ch.send(file=distorted_file)
-                                    return
-                            else:
-                                if DEBUG:
-                                    await ch.send(embed=embed_wrongfile_error)
-                                return
-                        else:
-                            await ch.send(embed=embed_unsafeurl_error)
-                            return
-        else:
+        # check for missing perms
+        missing = [p for p in required if not getattr(perms, p, False)]
+        if missing:
             return
+
+        async with ch.typing():  # trigger typing indicator
+            # first delete the existing files
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+
+            # fetch and process the image
+            try:
+                if len(msg.embeds) <= 0:  # no embeds
+                    url = msg.attachments[0].url
+                else:
+                    url = msg.embeds[0].image.url
+                    if isinstance(url, str) == False:
+                        await ch.send(embed=embed_nofile_error)
+                        return
+            except (IndexError, TypeError):
+                if DEBUG:  # don't send errors on reaction
+                    await ch.send(embed=embed_nofile_error)
+                return
+            else:
+                if url[0:26] == "https://cdn.discordapp.com":
+                    test_url = url.split('?')[0]
+                    if test_url[-4:].casefold() == ".jpg".casefold() or test_url[-4:].casefold() == ".png".casefold() or test_url[-5:].casefold() == ".jpeg".casefold() or test_url[-4:].casefold() == ".gif".casefold():
+                        r = requests.get(url, stream=True)
+                        image_name = str(uuid.uuid4()) + \
+                            '.jpg'  # generate uuid
+
+                        with open(os.path.join("raw", image_name), 'wb') as out_file:
+                            if DEBUG:
+                                print("───────────" +
+                                        image_name + "───────────")
+                                print("saving image: " + image_name)
+                            shutil.copyfileobj(r.raw, out_file)
+                            out_file.flush()
+
+                            # unfortunately await can't be used here
+                            distorted_file = distort_image(
+                                image_name, ())
+
+                            if DEBUG:
+                                print("distorted image: " + image_name)
+                                print(
+                                    "──────────────────────────────────────────────────────────────")
+                            # send distorted image
+                            if DEBUG:
+                                await ch.send("image ID: " + image_name.replace(".jpg", ""), file=distorted_file)
+                                return
+                            await ch.send(file=distorted_file)
+                            return
+                    else:
+                        if DEBUG:
+                            await ch.send(embed=embed_wrongfile_error)
+                        return
+                else:
+                    await ch.send(embed=embed_unsafeurl_error)
+                    return
 
 
 async def check_mentions(api, s_id):
