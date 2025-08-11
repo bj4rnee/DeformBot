@@ -49,6 +49,7 @@ Arguments for the `§d` command can be used as follows:\
 | r      | rotate (clockwise)         | int        | [-360; +360] |
 | h      | hue rotate                 | int        | [0; 360]     |
 | x      | pixel spread               | int        | [0; 100]     |
+| k      | paint effect               | int        | [0; 100]     |
 | f      | flip (horizontal, vertical)| string     | ['h','v']    |
 | a      | anaglyph (cyan-red 3D)     | bool       |              |
 | i      | invert colors              | bool       |              |

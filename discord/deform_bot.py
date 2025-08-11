@@ -377,6 +377,15 @@ def distort_image(fname, args, png: bool = False):
             if 1 <= cast_int <= 100:
                 build_str += f" -spread {cast_int} "
             continue
+        if e.startswith('k'): # kuwahara-flag (ms-paint-like effect)
+            try:
+                cast_int = int(e[1:4])
+            except:
+                arg_error_flag = True
+                continue
+            if 1 <= cast_int <= 100:
+                build_str += f" -kuwahara {cast_int} "
+            continue
         if e.startswith('w'):  # wave-flag
             try:
                 cast_int = int(e[1:4])
@@ -418,8 +427,10 @@ def distort_image(fname, args, png: bool = False):
                     x_coord = round(r * math.cos(alpha) + points[-1][0])
                     y_coord = round(r * math.sin(alpha) + points[-1][1])
                     points.append(tuple([x_coord, y_coord]))
-                # params                                                anker points: (1,1)                  (x,1)                               (1,y)                                                (x,y)
-                build_str += f" -define shepards:power={cast_float} -distort Shepards '1,1,1,1 {imgdimens[0]-1},1,{imgdimens[0]-1},1 1,{imgdimens[1]-1},1,{imgdimens[1]-1} {imgdimens[0]-1},{imgdimens[1]-1},{imgdimens[0]-1},{imgdimens[1]-1} "
+                # params                                                anker points: (1,1)                  (x,1)                               (1,y)
+                build_str += f" -define shepards:power={cast_float} -distort Shepards '1,1,1,1 {imgdimens[0]-1},1,{imgdimens[0]-1},1 1,{imgdimens[1]-1}" + \
+                    f",1,{imgdimens[1]-1} {imgdimens[0]-1},{imgdimens[1]-1},{imgdimens[0]-1},{imgdimens[1]-1} "
+                    #                                                (x,y)
                 for j in range(number_of_points):
                     build_str += f"{points[-2][0]},{points.pop(-2)[1]},{points[-1][0]},{points.pop(-1)[1]} "
                 build_str += "' "
@@ -686,7 +697,7 @@ async def help(ctx):
 
 
 # standard non-slash command
-@bot.command(name='deform', help='deform an image', aliases=['d', 'D' 'distort'])
+@bot.command(name='deform', help='deform an image', aliases=['d', 'D', 'distort'])
 @commands.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def deform(ctx, *args):
     global arg_error_flag
@@ -1013,6 +1024,109 @@ async def deform_cm(interaction: discord.Interaction, message: discord.Message):
                     return
 
 
+# standard non-slash command random deform
+@bot.command(name='random', help='Deform an image with random parameters. For usage refer to /help', aliases=['dr', 'DR', 'Dr', 'Random'])
+@commands.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
+async def deform_random(ctx, *args):
+    global arg_error_flag
+    async with lock:
+        msg = ctx.message  # msg with command in it
+        reply_msg = None  # original msg which was replied to with command
+        ch = msg.channel
+        url = ""
+        async with ch.typing():
+            # set error flag to false
+            arg_error_flag = False
+            # first delete the existing files
+            for delf in os.listdir("raw"):
+                if delf.endswith(".jpg"):
+                    os.remove(os.path.join("raw", delf))
+
+            for delf2 in os.listdir("results"):
+                if delf2.endswith(".jpg"):
+                    os.remove(os.path.join("results", delf2))
+
+            if msg.reference != None:  # if msg is a reply
+                reply_msg = await ctx.channel.fetch_message(msg.reference.message_id)
+                msg = reply_msg
+
+            try:
+                if len(msg.embeds) <= 0:  # no embeds
+                    url = msg.attachments[0].url
+                else:
+                    url = msg.embeds[0].image.url
+                    if isinstance(url, str) == False:
+                        await ctx.send(embed=embed_nofile_error)
+                        return
+            except (IndexError, TypeError):
+                older_msgs = [m async for m in ch.history(limit=10)]
+                # check if an older msg contains image
+                for omsg in older_msgs:
+                    try:
+                        if len(omsg.embeds) <= 0:  # no embeds
+                            url = omsg.attachments[0].url
+                            break
+                        else:
+                            url = omsg.embeds[0].image.url
+                            # this might be a problem: if the first embed db sees has a faulty url, it returns error
+                            if isinstance(url, str) == False:
+                                raise TypeError(
+                                    "Embed didn't contain valid image link")
+                            break
+                    except (IndexError, TypeError):
+                        if omsg == older_msgs[-1]:
+                            await ctx.send(embed=embed_nofile_error)
+                            return
+                        else:
+                            continue
+                # we land here on success
+
+            if url.startswith("https://cdn.discordapp.com"):
+                test_url = url.split("?", 1)[0]
+                allowed_exts = {".jpg", ".png", ".jpeg", ".gif"}
+
+                # check extension
+                if any(test_url.casefold().endswith(ext) for ext in allowed_exts):
+                    r = requests.get(url, stream=True)
+                    # always saved as .jpg
+                    image_name = f"{uuid.uuid4()}.jpg"
+
+                    with open(os.path.join("raw", image_name), "wb") as out_file:
+                        if DEBUG:
+                            print(f"───────────{image_name}───────────")
+                            print(f"saving image: {image_name}")
+
+                        shutil.copyfileobj(r.raw, out_file)
+                        out_file.flush()
+
+                    args_ = generate_random_args(args[0])
+                    distorted_file = distort_image(image_name, args_)
+
+                    if DEBUG:
+                        print(f"distorted image: {image_name}")
+                        print(
+                            "──────────────────────────────────────────────────────────────")
+                        args_str = ', '.join(f'`{a}`' for a in args)
+                        db_message = (
+                            f"image ID: {image_name.replace('.jpg', '')}\n"
+                            f"Applied Arguments: {args_str}"
+                        )
+                        await ctx.send(db_message, file=distorted_file)
+                        return
+
+                    await ctx.send(file=distorted_file)
+                    return
+
+                # wrong file extension
+                if DEBUG:
+                    await ctx.send(embed=embed_wrongfile_error)
+                return
+
+            # unsafe URL
+            await ctx.send(embed=embed_unsafeurl_error)
+            return
+
+
 # slash random deform
 @bot.tree.command(name="random", description="Deform an image with random parameters. For usage refer to /help")
 @app_commands.describe(file='Attach an image to deform',
@@ -1297,6 +1411,7 @@ def generate_random_args(n: int) -> Tuple[str]:
         "r": ("int", -360, 360),
         "h": ("int", 12, 360),
         "x": ("int", 4, 15),
+        "k": ("int", 4, 15),
         "f": ("string", ["h", "v"]),
         "a": ("bool", None),
         "i": ("bool", None),
