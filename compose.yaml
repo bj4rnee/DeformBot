@@ -12,6 +12,8 @@ services:
         retries: 3
       env_file:
         - .env
+      environment:
+        - MAGICK_THREAD_LIMIT=0   # use all available cores
       volumes:
         - .env:/deformbot/discord/.env
         - ${OUTPUT_PATH}:${OUTPUT_PATH}
