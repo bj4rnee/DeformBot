@@ -818,6 +818,7 @@ async def deform(ctx, *args):
                        r='Rotate (clockwise)',
                        h='Hue rotate (degrees)',
                        x='Pixel spread',
+                       k='MS-Paint like effect',
                        f='Flip (horizontal, vertical)',
                        a='Anaglyph (cyan-red 3D)',
                        i='Invert colors',
@@ -828,7 +829,7 @@ async def deform(ctx, *args):
 @app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
 async def deform_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, l: int = None, s: int = None,
                     b: int = None, n: int = None, c: int = None, o: int = None, d: int = None, w: int = None, r: int = None, h: int = None, x: int = None,
-                       f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
+                       k: int = None, f: discord.app_commands.Choice[str] = None, a: bool = False, i: bool = False, g: bool = False, u: bool = False):
     args_dict = locals()  # this has to be the fist call in the function
     args_dict.pop('interaction', None)  # remove interaction object
     args_dict.pop('message_id', None)
