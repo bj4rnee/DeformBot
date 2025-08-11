@@ -1100,7 +1100,11 @@ async def deform_random(ctx, *args):
                         shutil.copyfileobj(r.raw, out_file)
                         out_file.flush()
 
-                    args_ = generate_random_args(args[0])
+                    try:
+                        num_args = int(args[0]) if args else 3
+                    except ValueError:
+                        num_args = 3
+                    args_ = generate_random_args(num_args)
                     distorted_file = distort_image(image_name, args_)
 
                     if DEBUG:
@@ -1135,7 +1139,7 @@ async def deform_random(ctx, *args):
                        n='Number of random parameters',
                        )
 @app_commands.checks.bot_has_permissions(send_messages=True, attach_files=True, read_message_history=True, read_messages=True)
-async def deform_random_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, n: int = 1):
+async def deform_random_slash(interaction: discord.Interaction, file: discord.Attachment = None, message_id: str = None, n: int = 3):
     await interaction.response.defer()
     ch = interaction.channel
 
