@@ -383,7 +383,7 @@ def distort_image(fname, args, png: bool = False):
             except:
                 arg_error_flag = True
                 continue
-            if 1 <= cast_int <= 100:
+            if 1 <= cast_int <= 20:
                 build_str += f" -kuwahara {cast_int} "
             continue
         if e.startswith('w'):  # wave-flag
